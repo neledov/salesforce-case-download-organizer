@@ -1,0 +1,25 @@
+{
+  "downloads_dir": "/path/to/your/Downloads",
+  "rules": [
+    {
+      "subfolder": "Screenshots",
+      "extensions": [".jpg", ".jpeg", ".png", ".gif"]
+    },
+    {
+      "subfolder": "documents",
+      "extensions": [".pdf", ".docx", ".txt"],
+      "filename_contains": ["report", "summary"]
+    },
+    {
+      "subfolder": "Logs",
+      "extensions": [".zip", ".tar", ".gz"],
+      "filename_contains": ["log"]
+    },
+    {
+      "subfolder": "Scripts",
+      "extensions": [".py", ".sh"],
+      "filename_contains": ["script", "run"]
+    }
+  ],
+  "default_subfolder": "other"
+}
