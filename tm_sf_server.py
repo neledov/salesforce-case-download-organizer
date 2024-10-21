@@ -6,6 +6,7 @@ import os
 import time
 import logging
 from pathlib import Path
+from typing import Optional
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
@@ -13,11 +14,19 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(m
 PORT = 8000  # Port number for the local server
 CONFIG_FILE = 'config.json'  # Path to the configuration file
 
-case_number = None
+# Global state
+case_number: Optional[str] = None
 config = {}
 DOWNLOADS_DIR = Path()
 NO_CASE_FOLDER = ''
 DEFAULT_SUBFOLDER = ''
+file_assignments = {}
+assignments_lock = threading.Lock()
+
+# Configurable sleep timers (to be loaded from config.json)
+FILE_CHECK_INTERVAL = 0.5  # Default: 0.5 seconds
+MONITOR_INTERVAL = 0.5     # Default: 0.5 seconds
+ERROR_SLEEP = 5            # Default: 5 seconds
 
 def move_existing_files_to_no_case_folder():
     """
@@ -51,10 +60,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if 'case_number' in data:
                 received_case_number = data['case_number']
                 logging.info(f"Received case number: {received_case_number}")
-                if received_case_number == 'NO_CASE':
-                    case_number = None
-                else:
-                    case_number = received_case_number
+                with assignments_lock:
+                    if received_case_number == 'NO_CASE':
+                        case_number = None
+                    else:
+                        case_number = received_case_number
                 self.send_response(200)
                 self.end_headers()
                 self.wfile.write(b'Case number received')
@@ -71,7 +81,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Override to prevent logging every GET request to stdout
         return
 
-def is_file_fully_downloaded(filepath):
+def is_file_fully_downloaded(filepath: Path) -> bool:
     """
     Check if a file is fully downloaded by monitoring its size over time.
     """
@@ -87,7 +97,7 @@ def is_file_fully_downloaded(filepath):
             else:
                 stable_count = 0
                 previous_size = current_size
-            time.sleep(1)
+            time.sleep(FILE_CHECK_INTERVAL)
         return True
     except Exception as e:
         logging.error(f"Error checking if file is complete: {e}")
@@ -95,6 +105,7 @@ def is_file_fully_downloaded(filepath):
 
 def load_config():
     global config, DOWNLOADS_DIR, NO_CASE_FOLDER, DEFAULT_SUBFOLDER
+    global FILE_CHECK_INTERVAL, MONITOR_INTERVAL, ERROR_SLEEP
     try:
         with open(CONFIG_FILE, 'r') as f:
             config = json.load(f)
@@ -113,17 +124,25 @@ def load_config():
 
         # Set the default subfolder
         DEFAULT_SUBFOLDER = config.get('default_subfolder', 'Other')
+
+        # Load configurable sleep timers
+        FILE_CHECK_INTERVAL = config.get('file_check_interval', 0.5)
+        MONITOR_INTERVAL = config.get('monitor_interval', 0.5)
+        ERROR_SLEEP = config.get('error_sleep', 5)
     except Exception as e:
         logging.error(f"Error loading configuration: {e}")
         config = {
             "downloads_dir": "",
             "no_case_folder": "Miscellaneous",
             "rules": [],
-            "default_subfolder": "Other"
+            "default_subfolder": "Other",
+            "file_check_interval": 0.5,
+            "monitor_interval": 0.5,
+            "error_sleep": 5
         }
         raise e  # Re-raise the exception to halt execution
 
-def determine_subfolder(filename):
+def determine_subfolder(filename: str) -> str:
     filename_lower = filename.lower()
     for rule in config.get('rules', []):
         try:
@@ -147,6 +166,7 @@ def determine_subfolder(filename):
 def monitor_downloads():
     """
     Monitor the Downloads directory for new files and move them accordingly.
+    Each file is assigned to the current case_number at the time of detection.
     """
     while True:
         try:
@@ -158,15 +178,22 @@ def monitor_downloads():
                     if case_number and file.parent == (DOWNLOADS_DIR / case_number):
                         continue
 
+                    # Acquire lock to assign case_number
+                    with assignments_lock:
+                        if file.name in file_assignments:
+                            continue  # Already assigned
+                        assigned_case = case_number  # Capture current case_number
+                        file_assignments[file.name] = assigned_case
+
                     # Check if file is fully downloaded
                     if is_file_fully_downloaded(file):
                         filename = file.name
                         logging.info(f"Detected new file: {filename}")
 
-                        if case_number:
+                        if assigned_case:
                             # Determine subfolder based on rules
                             subfolder = determine_subfolder(filename)
-                            target_folder = DOWNLOADS_DIR / case_number / subfolder
+                            target_folder = DOWNLOADS_DIR / assigned_case / subfolder
                         else:
                             # Move directly to no_case_folder without subfolders
                             target_folder = DOWNLOADS_DIR / NO_CASE_FOLDER
@@ -183,21 +210,32 @@ def monitor_downloads():
                                 logging.info(f"Removed existing file in target: {target_filepath.name}")
                             except Exception as e:
                                 logging.error(f"Error removing existing file {target_filepath.name}: {e}")
+                                # Remove assignment since move failed
+                                with assignments_lock:
+                                    del file_assignments[filename]
                                 continue  # Skip moving this file
 
                         # Move the file
                         try:
                             file.rename(target_filepath)
-                            if case_number:
-                                logging.info(f"Moved {filename} to {target_folder} under case {case_number}")
+                            if assigned_case:
+                                logging.info(f"Moved {filename} to {target_folder} under case {assigned_case}")
                             else:
                                 logging.info(f"Moved {filename} to {target_folder} (no active case)")
                         except Exception as e:
                             logging.error(f"Error moving file {filename} to {target_folder}: {e}")
-            time.sleep(1)  # Check every second
+                            # Remove assignment since move failed
+                            with assignments_lock:
+                                del file_assignments[filename]
+                            continue  # Skip to the next file
+                        finally:
+                            # Remove assignment after moving
+                            with assignments_lock:
+                                del file_assignments[filename]
+            time.sleep(MONITOR_INTERVAL)  # Configurable sleep interval
         except Exception as e:
             logging.error(f"Error in monitor_downloads loop: {e}")
-            time.sleep(5)  # Wait before retrying to prevent rapid error logging
+            time.sleep(ERROR_SLEEP)  # Configurable error sleep interval
 
 def run_server():
     """
