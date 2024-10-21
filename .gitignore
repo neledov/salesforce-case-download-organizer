@@ -3,3 +3,4 @@ venv/
 
 # Ignore configuration files
 config.json
+.DS_Store

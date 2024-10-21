@@ -1,70 +1,89 @@
 // ==UserScript==
-// @name         Salesforce Active Case Number Extractor
+// @name         Salesforce Case Number Notifier
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Extracts the case number from the active tab and updates the window title
-// @author       
+// @version      1.2
+// @description  Sends the active case number to a local server when it changes
+// @author
 // @match        *://*.lightning.force.com/*
-// @grant        none
+// @grant        GM_xmlhttpRequest
+// @connect      localhost
 // @run-at       document-end
 // ==/UserScript==
 
 (function() {
     'use strict';
 
-    function updateCaseNumberInTitle() {
-        // Find the active tab
-        const activeTab = document.querySelector('a[role="tab"][aria-selected="true"][title*="| Case"]');
-        if (activeTab) {
-            // Extract the case number from the title attribute
-            const titleAttr = activeTab.getAttribute('title');
-            const match = titleAttr.match(/^(\d+)\s*\|\s*Case$/);
-            if (match && match[1]) {
-                const caseNumber = match[1];
-                console.log('Active Case Number:', caseNumber);
+    let lastCaseNumber = null;
 
-                // Update the window title
-                document.title = `Case ${caseNumber} - Salesforce`;
+    function sendCaseNumber(caseNumber) {
+        try {
+            GM_xmlhttpRequest({
+                method: 'POST',
+                url: 'http://localhost:8000',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify({ case_number: caseNumber }),
+                timeout: 5000, // Timeout in milliseconds
+                onload: function(response) {
+                    console.log('Case number sent:', caseNumber);
+                },
+                onerror: function(error) {
+                    console.error('Error sending case number:', error);
+                },
+                ontimeout: function() {
+                    console.error('Request timed out while sending case number.');
+                }
+            });
+        } catch (e) {
+            console.error('Exception in sendCaseNumber:', e);
+        }
+    }
 
-                // Store the case number in sessionStorage (optional)
-                sessionStorage.setItem('activeCaseNumber', caseNumber);
+    function updateCaseNumber() {
+        try {
+            // Find the active tab
+            const activeTab = document.querySelector('a[role="tab"][aria-selected="true"][title*="| Case"]');
+            if (activeTab) {
+                // Extract the case number from the title attribute
+                const titleAttr = activeTab.getAttribute('title');
+                const match = titleAttr.match(/^(\d+)\s*\|\s*Case$/);
+                if (match && match[1]) {
+                    const caseNumber = match[1];
+                    if (caseNumber !== lastCaseNumber) {
+                        console.log('Active Case Number changed:', caseNumber);
+                        lastCaseNumber = caseNumber;
+                        // Send the case number to the local server
+                        sendCaseNumber(caseNumber);
+                    }
+                } else {
+                    console.warn('Case number not found in the active tab title.');
+                }
+            } else {
+                console.warn('Active case tab not found.');
             }
+        } catch (e) {
+            console.error('Exception in updateCaseNumber:', e);
         }
     }
 
     // Initial call
-    updateCaseNumberInTitle();
+    updateCaseNumber();
 
     // Observe changes to detect tab switches
-    const observer = new MutationObserver((mutationsList) => {
-        for (const mutation of mutationsList) {
-            if (mutation.attributeName === 'aria-selected') {
-                updateCaseNumberInTitle();
-            }
-        }
+    const observer = new MutationObserver(() => {
+        updateCaseNumber();
     });
 
-    // Start observing tab elements
-    const tabList = document.querySelectorAll('a[role="tab"][title*="| Case"]');
-    tabList.forEach(tab => {
-        observer.observe(tab, { attributes: true });
-    });
+    try {
+        observer.observe(document.body, { childList: true, subtree: true });
+    } catch (e) {
+        console.error('Exception while setting up MutationObserver:', e);
+    }
 
-    // Re-scan tabs if the DOM changes
-    const domObserver = new MutationObserver(() => {
-        // Disconnect previous observers
-        observer.disconnect();
-
-        // Re-attach observers to updated tab elements
-        const newTabList = document.querySelectorAll('a[role="tab"][title*="| Case"]');
-        newTabList.forEach(tab => {
-            observer.observe(tab, { attributes: true });
-        });
-
-        // Update case number in title
-        updateCaseNumberInTitle();
-    });
-
-    domObserver.observe(document.body, { childList: true, subtree: true });
+    // Optional: Periodically check for case number changes
+    setInterval(() => {
+        updateCaseNumber();
+    }, 5000); // Check every 5 seconds
 
 })();
