@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      2.7
 // @description  Sends the active Salesforce case number to a local server when it changes or when not viewing a case.
-// @author       Anton Neledov - Palo Alto Networks
+// @author
 // @match        *://*.lightning.force.com/*
 // @grant        GM_xmlhttpRequest
 // @connect      localhost
@@ -113,19 +113,6 @@
                 // Delay to allow Salesforce's DOM to update upon becoming visible
                 setTimeout(updateCaseNumber, 1000);
             }
-        });
-
-        // When the window gains focus
-        window.addEventListener('focus', () => {
-            console.log(`${LOG_PREFIX} Window gained focus. Updating case number.`);
-            // Delay to allow Salesforce's DOM to update upon gaining focus
-            setTimeout(updateCaseNumber, 1000);
-        });
-
-        // When the window loses focus
-        window.addEventListener('blur', () => {
-            console.log(`${LOG_PREFIX} Window lost focus. Sending 'NO_CASE'.`);
-            sendNoCase();
         });
 
         // Before the window unloads (e.g., tab closure)
