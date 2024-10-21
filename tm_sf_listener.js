@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      2.7
 // @description  Sends the active Salesforce case number to a local server when it changes or when not viewing a case.
-// @author
+// @author       Anton Neledov - Palo Alto Networks
 // @match        *://*.lightning.force.com/*
 // @grant        GM_xmlhttpRequest
 // @connect      localhost
