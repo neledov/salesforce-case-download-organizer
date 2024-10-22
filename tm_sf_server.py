@@ -348,7 +348,7 @@ def monitor_downloads():
                             del file_assignments[file.name]
         except Exception as e:
             logging.error(f"Error in monitor_downloads loop: {e}")
-            time.sleep(ERROR_SLEEP)  # Configurable error sleep interval
+            time.sleep(ERROR_SLEEP)  # Configurable error sleep intervals
 
 # ----------------------------- Server Initialization ----------------------
 
