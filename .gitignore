@@ -1,6 +1,6 @@
 # Ignore virtual environment directories
 venv/
-
+server.log
 # Ignore configuration files
 config.json
 .DS_Store

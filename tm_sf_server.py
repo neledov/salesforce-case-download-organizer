@@ -6,29 +6,83 @@ import os
 import time
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any
 import re
+import signal
+from logging.handlers import RotatingFileHandler
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
+# ----------------------------- Configuration -----------------------------
 
-PORT = 8000  # Port number for the local server
 CONFIG_FILE = 'config.json'  # Path to the configuration file
 
-# Global state
+# Default configuration values
+DEFAULT_CONFIG: Dict[str, Any] = {
+    "no_case_folder": "Other_downloads",
+    "downloads_dir": "/Users/aneledov/Downloads",
+    "server_port": 8000,
+    "rules": [
+        {
+            "subfolder": "Screenshots",
+            "extensions": [".jpg", ".jpeg", ".png", ".gif"]
+        },
+        {
+            "subfolder": "documents",
+            "extensions": [".pdf", ".docx", ".txt"],
+            "filename_contains": ["report", "summary"]
+        },
+        {
+            "subfolder": "Logs",
+            "extensions": [".zip", ".tar", ".gz"],
+            "filename_contains": ["log"]
+        },
+        {
+            "subfolder": "Scripts",
+            "extensions": [".py", ".sh"],
+            "filename_contains": ["script", "run"]
+        },
+        {
+            "subfolder": "Playbooks",
+            "extensions": [".yml"]
+        },
+        {
+            "subfolder": "HAR",
+            "extensions": [".har"]
+        }
+    ],
+    "default_subfolder": "other",
+    "file_check_interval": 0.5,  
+    "monitor_interval": 0.5,     
+    "error_sleep": 5             
+}
+
+# ----------------------------- Logging Setup -----------------------------
+
+# Create a rotating file handler
+log_handler = RotatingFileHandler('server.log', maxBytes=5*1024*1024, backupCount=2)
+log_formatter = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s')
+log_handler.setFormatter(log_formatter)
+log_handler.setLevel(logging.INFO)
+
+# Configure the root logger
+logging.basicConfig(level=logging.INFO, handlers=[log_handler])
+
+# ----------------------------- Global State -------------------------------
+
 current_company_name: Optional[str] = None
 current_case_number: Optional[str] = None
-config = {}
+config: Dict[str, Any] = {}
 DOWNLOADS_DIR = Path()
 NO_CASE_FOLDER = ''
 DEFAULT_SUBFOLDER = ''
-file_assignments = {}
+file_assignments: Dict[str, Optional[tuple]] = {}
 assignments_lock = threading.Lock()
 
-# Configurable sleep timers (to be loaded from config.json)
 FILE_CHECK_INTERVAL = 0.5  # Default: 0.5 seconds
 MONITOR_INTERVAL = 0.5     # Default: 0.5 seconds
 ERROR_SLEEP = 5            # Default: 5 seconds
+PORT = 8000                # Default port
+
+# ----------------------------- Utility Functions --------------------------
 
 def sanitize_filename(name: str) -> str:
     """
@@ -40,29 +94,94 @@ def sanitize_filename(name: str) -> str:
     sanitized = sanitized.strip()
     # Replace multiple spaces or underscores with a single underscore
     sanitized = re.sub(r'[_\s]+', '_', sanitized)
+    # Truncate to a reasonable length (e.g., 255 characters)
+    sanitized = sanitized[:255]
+    # Prevent reserved names (example for Windows)
+    reserved_names = {"CON", "PRN", "AUX", "NUL",
+                      "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+                      "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"}
+    if sanitized.upper() in reserved_names:
+        sanitized = f"{sanitized}_folder"
     return sanitized
 
-def move_existing_files_to_no_case_folder():
+def move_file_with_retry(source: Path, target: Path, retries: int = 3, delay: int = 2) -> bool:
     """
-    Move existing files in the Downloads directory to the 'no_case_folder' at startup.
+    Attempt to move a file with retries in case of transient errors.
     """
-    try:
-        target_folder = DOWNLOADS_DIR / NO_CASE_FOLDER
-        target_folder.mkdir(parents=True, exist_ok=True)
+    for attempt in range(1, retries + 1):
+        try:
+            source.rename(target)
+            logging.info(f"Moved {source.name} to {target}")
+            return True
+        except Exception as e:
+            logging.error(f"Attempt {attempt}: Error moving file {source.name} to {target}: {e}")
+            if attempt < retries:
+                time.sleep(delay)
+            else:
+                logging.error(f"Failed to move {source.name} after {retries} attempts.")
+                return False
 
-        for file in DOWNLOADS_DIR.iterdir():
-            if file.is_file() and not file.name.startswith('.') and not file.name.endswith('.download'):
-                try:
-                    destination = target_folder / file.name
-                    if destination.exists():
-                        destination.unlink()  # Remove existing file
-                        logging.info(f"Removed existing file: {destination.name}")
-                    file.rename(destination)
-                    logging.info(f"Moved existing file {file.name} to {target_folder}")
-                except Exception as e:
-                    logging.error(f"Error moving file {file.name} to '{NO_CASE_FOLDER}' folder: {e}")
+def load_config():
+    """
+    Load configuration from the config.json file.
+    Overrides default values with those provided in the file.
+    """
+    global config, DOWNLOADS_DIR, NO_CASE_FOLDER, DEFAULT_SUBFOLDER
+    global FILE_CHECK_INTERVAL, MONITOR_INTERVAL, ERROR_SLEEP, PORT
+
+    try:
+        with open(CONFIG_FILE, 'r') as f:
+            config = json.load(f)
+            logging.info(f"Configuration loaded from {CONFIG_FILE}")
+    except FileNotFoundError:
+        logging.warning(f"{CONFIG_FILE} not found. Using default configuration.")
+        config = DEFAULT_CONFIG.copy()
+    except json.JSONDecodeError as e:
+        logging.error(f"Invalid JSON in {CONFIG_FILE}: {e}. Using default configuration.")
+        config = DEFAULT_CONFIG.copy()
     except Exception as e:
-        logging.error(f"Error during initial file move to '{NO_CASE_FOLDER}' folder: {e}")
+        logging.error(f"Error loading {CONFIG_FILE}: {e}. Using default configuration.")
+        config = DEFAULT_CONFIG.copy()
+
+    # Override defaults with config file values
+    config = {**DEFAULT_CONFIG, **config}
+
+    # Set global variables from config
+    DOWNLOADS_DIR = Path(config['downloads_dir']).resolve()
+    NO_CASE_FOLDER = config['no_case_folder']
+    DEFAULT_SUBFOLDER = config['default_subfolder']
+    FILE_CHECK_INTERVAL = config.get('file_check_interval', 0.5)
+    MONITOR_INTERVAL = config.get('monitor_interval', 0.5)
+    ERROR_SLEEP = config.get('error_sleep', 5)
+    PORT = config.get('server_port', 8000)
+
+def determine_subfolder(filename: str) -> str:
+    """
+    Determine the appropriate subfolder for a file based on configured rules.
+    """
+    filename_lower = filename.lower()
+    for rule in config.get('rules', []):
+        try:
+            # Check extensions
+            extensions = rule.get('extensions', [])
+            if extensions:
+                if not any(filename_lower.endswith(ext.lower()) for ext in extensions):
+                    continue  # Extension doesn't match, check next rule
+            # Check filename_contains
+            filename_contains = rule.get('filename_contains', [])
+            if filename_contains:
+                if not isinstance(filename_contains, list):
+                    filename_contains = [filename_contains]
+                if not any(s.lower() in filename_lower for s in filename_contains):
+                    continue  # Filename doesn't contain required string, check next rule
+            # If both checks pass or are not specified, return the subfolder
+            return rule.get('subfolder', DEFAULT_SUBFOLDER)
+        except Exception as e:
+            logging.error(f"Error processing rule {rule}: {e}")
+    # If no rules match, return the default subfolder
+    return DEFAULT_SUBFOLDER
+
+# ----------------------------- Server Handler -----------------------------
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
@@ -113,6 +232,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Override to prevent logging every GET request to stdout
         return
 
+# ----------------------------- File Monitoring ----------------------------
+
 def is_file_fully_downloaded(filepath: Path) -> bool:
     """
     Check if a file is fully downloaded by monitoring its size over time.
@@ -135,65 +256,27 @@ def is_file_fully_downloaded(filepath: Path) -> bool:
         logging.error(f"Error checking if file is complete: {e}")
         return False
 
-def load_config():
-    global config, DOWNLOADS_DIR, NO_CASE_FOLDER, DEFAULT_SUBFOLDER
-    global FILE_CHECK_INTERVAL, MONITOR_INTERVAL, ERROR_SLEEP
+def move_existing_files_to_no_case_folder():
+    """
+    Move existing files in the Downloads directory to the 'no_case_folder' at startup.
+    """
     try:
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-            logging.info(f"Configuration loaded from {CONFIG_FILE}")
-        
-        # Validate and set the downloads directory
-        downloads_dir = config.get('downloads_dir')
-        if not downloads_dir or not Path(downloads_dir).is_dir():
-            logging.error(f"Invalid downloads_dir in configuration: {downloads_dir}")
-            raise ValueError("Invalid downloads_dir in configuration.")
-        DOWNLOADS_DIR = Path(downloads_dir).resolve()
+        target_folder = DOWNLOADS_DIR / NO_CASE_FOLDER
+        target_folder.mkdir(parents=True, exist_ok=True)
 
-        # Set the no_case_folder
-        no_case_folder = config.get('no_case_folder', 'Miscellaneous')
-        NO_CASE_FOLDER = no_case_folder
-
-        # Set the default subfolder
-        DEFAULT_SUBFOLDER = config.get('default_subfolder', 'Other')
-
-        # Load configurable sleep timers
-        FILE_CHECK_INTERVAL = config.get('file_check_interval', 0.5)
-        MONITOR_INTERVAL = config.get('monitor_interval', 0.5)
-        ERROR_SLEEP = config.get('error_sleep', 5)
+        for file in DOWNLOADS_DIR.iterdir():
+            if file.is_file() and not file.name.startswith('.') and not file.name.endswith('.download'):
+                try:
+                    destination = target_folder / file.name
+                    if destination.exists():
+                        destination.unlink()  # Remove existing file
+                        logging.info(f"Removed existing file: {destination.name}")
+                    file.rename(destination)
+                    logging.info(f"Moved existing file {file.name} to {target_folder}")
+                except Exception as e:
+                    logging.error(f"Error moving file {file.name} to '{NO_CASE_FOLDER}' folder: {e}")
     except Exception as e:
-        logging.error(f"Error loading configuration: {e}")
-        config = {
-            "downloads_dir": "",
-            "no_case_folder": "Miscellaneous",
-            "rules": [],
-            "default_subfolder": "Other",
-            "file_check_interval": 0.5,
-            "monitor_interval": 0.5,
-            "error_sleep": 5
-        }
-        raise e  # Re-raise the exception to halt execution
-
-def determine_subfolder(filename: str) -> str:
-    filename_lower = filename.lower()
-    for rule in config.get('rules', []):
-        try:
-            # Check extensions
-            extensions = rule.get('extensions', [])
-            if extensions:
-                if not any(filename_lower.endswith(ext.lower()) for ext in extensions):
-                    continue  # Extension doesn't match, check next rule
-            # Check filename_contains
-            filename_contains = rule.get('filename_contains', [])
-            if filename_contains:
-                if not any(s.lower() in filename_lower for s in filename_contains):
-                    continue  # Filename doesn't contain required string, check next rule
-            # If both checks pass or are not specified, return the subfolder
-            return rule.get('subfolder', DEFAULT_SUBFOLDER)
-        except Exception as e:
-            logging.error(f"Error processing rule {rule}: {e}")
-    # If no rules match, return the default subfolder
-    return DEFAULT_SUBFOLDER
+        logging.error(f"Error during initial file move to '{NO_CASE_FOLDER}' folder: {e}")
 
 def monitor_downloads():
     """
@@ -254,53 +337,64 @@ def monitor_downloads():
                                     del file_assignments[file.name]
                                 continue  # Skip moving this file
 
-                        # Move the file
-                        try:
-                            file.rename(target_filepath)
-                            if assigned_company and assigned_case:
-                                logging.info(f"Moved {filename} to {target_folder} under company '{assigned_company}' and case '{assigned_case}'")
-                            else:
-                                logging.info(f"Moved {filename} to {target_folder} (no active case)")
-                        except Exception as e:
-                            logging.error(f"Error moving file {filename} to {target_folder}: {e}")
-                            # Remove assignment since move failed
+                        # Move the file with retry
+                        success = move_file_with_retry(file, target_filepath)
+                        if not success:
                             with assignments_lock:
                                 del file_assignments[file.name]
                             continue  # Skip to the next file
-                        finally:
-                            # Remove assignment after moving
-                            with assignments_lock:
-                                del file_assignments[file.name]
-            time.sleep(MONITOR_INTERVAL)  # Configurable sleep interval
+
+                        # Remove assignment after moving
+                        with assignments_lock:
+                            del file_assignments[file.name]
         except Exception as e:
             logging.error(f"Error in monitor_downloads loop: {e}")
             time.sleep(ERROR_SLEEP)  # Configurable error sleep interval
+
+# ----------------------------- Server Initialization ----------------------
 
 def run_server():
     """
     Start the HTTP server to receive case number and company name notifications.
     """
     try:
-        with socketserver.TCPServer(("", PORT), Handler) as httpd:
-            logging.info(f"Serving at port {PORT}")
+        with socketserver.TCPServer(("127.0.0.1", PORT), Handler) as httpd:
+            logging.info(f"Serving at port {PORT} on localhost only.")
+
+            # Handle graceful shutdown
+            def shutdown_signal_handler(signum, frame):
+                logging.info("Shutdown signal received. Shutting down server.")
+                httpd.shutdown()
+
+            signal.signal(signal.SIGINT, shutdown_signal_handler)
+            signal.signal(signal.SIGTERM, shutdown_signal_handler)
+
             httpd.serve_forever()
     except Exception as e:
         logging.error(f"Error starting server: {e}")
+
+# ----------------------------- Main Execution -----------------------------
 
 if __name__ == '__main__':
     try:
         # Load the configuration at startup
         load_config()
 
+        # Ensure the downloads directory exists
+        if not DOWNLOADS_DIR.exists():
+            logging.error(f"Downloads directory does not exist: {DOWNLOADS_DIR}")
+            raise FileNotFoundError(f"Downloads directory does not exist: {DOWNLOADS_DIR}")
+
         # Move existing files to 'no_case_folder'
         move_existing_files_to_no_case_folder()
 
-        # Start the server in a separate thread
-        server_thread = threading.Thread(target=run_server, daemon=True)
-        server_thread.start()
+        # Start monitoring downloads in a separate thread
+        monitor_thread = threading.Thread(target=monitor_downloads, daemon=True)
+        monitor_thread.start()
 
-        # Start monitoring downloads
-        monitor_downloads()
+        # Start the server in the main thread
+        run_server()
+
     except Exception as e:
         logging.critical(f"Critical error: {e}")
         logging.critical("Exiting script due to critical error.")
