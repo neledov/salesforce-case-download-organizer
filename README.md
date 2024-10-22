@@ -1,165 +1,336 @@
 # Salesforce Case Download Organizer
 
-A Python script that organizes downloaded files from Salesforce cases into case-specific folders and subfolders based on configurable rules.
+**Author:** Anton Neledov  
 
-## Author
+## Overview
 
-**Anton Neledov**
-
-GitHub: [https://github.com/neledov/salesforce-case-download-organizer](https://github.com/neledov/salesforce-case-download-organizer)
-
-## Description
-
-This script automates the organization of files downloaded from Salesforce cases by:
-
-- Receiving the active case number from a Tampermonkey script.
-- Monitoring the Downloads directory for new files.
-- Moving files into folders named after the case number.
-- Organizing files into subfolders based on file extensions and filename patterns defined in a configuration file.
+The **Salesforce Case Download Organizer** automatically organizes your downloaded files based on active Salesforce cases and associated companies, keeping your Downloads folder tidy and efficient.
 
 ## Features
 
-- **Configurable Rules**: Define how files are organized using a `config.json` file.
-- **Automatic Case Detection**: Uses a Tampermonkey script to detect the active Salesforce case number.
-- **No Elevated Privileges Required**: Runs without the need for sudo or administrator privileges.
-- **Error Handling**: Robust exception handling to ensure smooth operation.
+- **Automatic File Monitoring:** Watches your Downloads folder and organizes new files as they arrive.
+- **Configurable Rules:** Customize how files are categorized based on their extensions and names.
+- **Case-Based Organization:** Sorts files into folders corresponding to your active Salesforce cases and companies.
+- **Tampermonkey Integration:** A browser script that communicates active case information to the local server in real-time.
+- **Graceful Shutdown:** Ensures the server stops smoothly without disrupting ongoing operations.
+- **Robust Logging:** Detailed logs with automatic rotation to help you monitor activities.
+- **Cross-Platform Support:** Compatible with Windows, macOS, and Linux.
 
-## Requirements
+## How It Works
 
-- Python 3.x
-- Tampermonkey extension installed in your browser (Chrome, Firefox, etc.)
+1. **Tampermonkey Script:** When you view or stop viewing a Salesforce case in your browser, the Tampermonkey script sends the active case number and company name to the local Python server.
+2. **Python Server:** Continuously monitors your Downloads directory for new files. Based on the received case information, it organizes downloaded files into appropriate folders following the defined rules.
+3. **File Organization:** Files are categorized into subfolders like `Screenshots`, `Documents`, etc., within folders named after the company and case number.
 
 ## Installation
 
-1. **Clone the Repository**
+### Prerequisites
+
+Ensure you have the following installed on your system:
+
+- **Python 3.6 or higher:** Download from the [official Python website](https://www.python.org/downloads/).
+- **Git:** To clone the repository, download it from [here](https://git-scm.com/downloads), or you can download the ZIP file directly from GitHub.
+- **Tampermonkey Extension:** Install Tampermonkey in your preferred browser:
+  - [Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
+  - [Firefox](https://addons.mozilla.org/firefox/addon/tampermonkey/)
+  - [Edge](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
+  - [Safari](https://www.tampermonkey.net/?browser=safari)
+
+### Installation Steps by Operating System
+
+#### Windows
+
+1. **Clone the Repository:**
+
+   Open Command Prompt and run:
 
    ```bash
    git clone https://github.com/neledov/salesforce-case-download-organizer.git
+   ```
+
+   *Alternatively, download the ZIP file from the [GitHub repository](https://github.com/neledov/salesforce-case-download-organizer) and extract it.*
+
+2. **Navigate to the Project Directory:**
+
+   ```bash
    cd salesforce-case-download-organizer
    ```
 
-2. **Set Up a Virtual Environment (Optional but Recommended)**
+3. **Set Up the Python Environment:**
+
+   It's a good practice to use a virtual environment to manage dependencies.
+
+   ```bash
+   python -m venv venv
+   venv\Scripts\activate
+   ```
+
+4. **Configure the Application:**
+
+   Open the `config.json` file in a text editor and adjust the settings as needed. Refer to the [Configuration](#configuration) section for details.
+
+5. **Run the Server:**
+
+   ```bash
+   python server.py
+   ```
+
+#### macOS
+
+1. **Clone the Repository:**
+
+   Open Terminal and run:
+
+   ```bash
+   git clone https://github.com/neledov/salesforce-case-download-organizer.git
+   ```
+
+   *Alternatively, download the ZIP file from the [GitHub repository](https://github.com/neledov/salesforce-case-download-organizer) and extract it.*
+
+2. **Navigate to the Project Directory:**
+
+   ```bash
+   cd salesforce-case-download-organizer
+   ```
+
+3. **Set Up the Python Environment:**
+
+   It's a good practice to use a virtual environment to manage dependencies.
 
    ```bash
    python3 -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate
    ```
 
-3. **Install Dependencies**
+4. **Configure the Application:**
 
-   - The script uses only standard Python libraries, so no additional packages are required.
+   Open the `config.json` file in a text editor and adjust the settings as needed. Refer to the [Configuration](#configuration) section for details.
 
-4. **Create Your Configuration File**
+5. **Run the Server:**
 
-   - Copy the example configuration file:
+   ```bash
+   python server.py
+   ```
 
-     ```bash
-     cp config.json.example config.json
-     ```
+#### Linux
 
-   - Edit `config.json` to set your `downloads_dir` and customize the rules.
+1. **Clone the Repository:**
 
-     ```json
-     {
-       "downloads_dir": "/path/to/your/Downloads",
-       "rules": [
-         {
-           "subfolder": "Screenshots",
-           "extensions": [".jpg", ".jpeg", ".png", ".gif"]
-         },
-         {
-           "subfolder": "documents",
-           "extensions": [".pdf", ".docx", ".txt"],
-           "filename_contains": ["report", "summary"]
-         },
-         {
-           "subfolder": "Logs",
-           "extensions": [".zip", ".tar", ".gz"],
-           "filename_contains": ["log"]
-         },
-         {
-           "subfolder": "Scripts",
-           "extensions": [".py", ".sh"],
-           "filename_contains": ["script", "run"]
-         }
-       ],
-       "default_subfolder": "other"
-     }
-     ```
+   Open Terminal and run:
+
+   ```bash
+   git clone https://github.com/neledov/salesforce-case-download-organizer.git
+   ```
+
+   *Alternatively, download the ZIP file from the [GitHub repository](https://github.com/neledov/salesforce-case-download-organizer) and extract it.*
+
+2. **Navigate to the Project Directory:**
+
+   ```bash
+   cd salesforce-case-download-organizer
+   ```
+
+3. **Set Up the Python Environment:**
+
+   It's a good practice to use a virtual environment to manage dependencies.
+
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+4. **Configure the Application:**
+
+   Open the `config.json` file in a text editor and adjust the settings as needed. Refer to the [Configuration](#configuration) section for details.
+
+5. **Run the Server:**
+
+   ```bash
+   python server.py
+   ```
+
+## Configuration
+
+The application uses a `config.json` file to manage settings. Below is an example configuration:
+
+```json
+{
+    "no_case_folder": "Other_downloads",
+    "downloads_dir": "/path/to/your/Downloads",
+    "server_port": 8000,
+    "rules": [
+        {
+            "subfolder": "Screenshots",
+            "extensions": [".jpg", ".jpeg", ".png", ".gif"]
+        },
+        {
+            "subfolder": "Documents",
+            "extensions": [".pdf", ".docx", ".txt"],
+            "filename_contains": ["report", "summary"]
+        },
+        {
+            "subfolder": "Logs",
+            "extensions": [".zip", ".tar", ".gz"],
+            "filename_contains": ["log"]
+        },
+        {
+            "subfolder": "Scripts",
+            "extensions": [".py", ".sh"],
+            "filename_contains": ["script", "run"]
+        },
+        {
+            "subfolder": "Playbooks",
+            "extensions": [".yml"]
+        },
+        {
+            "subfolder": "HAR",
+            "extensions": [".har"]
+        }
+    ],
+    "default_subfolder": "other",
+    "file_check_interval": 0.5,
+    "monitor_interval": 0.5,
+    "error_sleep": 5
+}
+```
+
+### Configuration Parameters
+
+- **`no_case_folder`**: Name of the folder where files without an active case are moved.
+- **`downloads_dir`**: Absolute path to your Downloads directory.
+- **`server_port`**: Port number on which the server listens (default is `8000`).
+- **`rules`**: List of rules to categorize files based on extensions and filename content.
+  - **`subfolder`**: Destination subfolder name.
+  - **`extensions`**: List of file extensions to match.
+  - **`filename_contains`** *(optional)*: List of substrings that must be present in the filename.
+- **`default_subfolder`**: Subfolder name used when no rules match.
+- **`file_check_interval`**: Time (in seconds) between file size checks to determine if a download is complete.
+- **`monitor_interval`**: Time (in seconds) between scans of the Downloads directory.
+- **`error_sleep`**: Time (in seconds) to wait before retrying after an error occurs.
+
+### Tips for Configuration
+
+- **Customize Rules:** Modify the `rules` section to fit your file categorization needs. Add or remove rules as necessary.
+- **Adjust Intervals:** If you experience performance issues, consider increasing `monitor_interval` and `file_check_interval` to reduce resource usage.
+- **Change Port:** Ensure that the `server_port` you choose is not in use by another application.
 
 ## Usage
 
-### Running the Python Script
+### Setting Up the Python Server
 
-1. **Start the Script**
+1. **Start the Server:**
+
+   Ensure you've activated your virtual environment and are in the project directory, then run:
 
    ```bash
-   python3 tm_sf_server.py
+   python server.py
    ```
 
-   Ensure that you replace `tm_sf_server.py` with the actual name of the Python script if different.
+   **Behavior:**
+   - **Initial File Move:** On startup, existing files in the `downloads_dir` are moved to the `no_case_folder`.
+   - **Server Operation:** The server listens on the specified `server_port` on `localhost` (`127.0.0.1`).
+   - **File Monitoring:** Continuously monitors the `downloads_dir` for new files and organizes them based on the current `company_name` and `case_number` received via POST requests.
 
-2. **Keep the Script Running**
+2. **Monitor Logs:**
 
-   - The script needs to run in the background to monitor downloads and organize files.
+   Check the `server.log` file for detailed logs about file movements and server operations.
 
-### Setting Up the Tampermonkey Script
+### Installing the Tampermonkey Script
 
-1. **Install Tampermonkey Extension**
+The **Salesforce Case Number Notifier** is a Tampermonkey script that automatically sends active case information to the local server when you view or stop viewing a Salesforce case.
 
-   - [Chrome Web Store](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
-   - [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
+1. **Install Tampermonkey Extension:**
 
-2. **Create a New Tampermonkey Script**
+   If you haven't already, install the Tampermonkey extension in your preferred browser:
+   - [Chrome](https://chrome.google.com/webstore/detail/tampermonkey/)
+   - [Firefox](https://addons.mozilla.org/firefox/addon/tampermonkey/)
+   - [Edge](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/)
+   - [Safari](https://www.tampermonkey.net/?browser=safari)
 
-   - Open Tampermonkey dashboard.
-   - Click on **Create a new script**.
+2. **Add the Tampermonkey Script:**
 
-3. **Paste the Tampermonkey Script**
+   - **Create a New Script:**
+     - Click on the Tampermonkey icon in your browser toolbar.
+     - Select **"Create a new script..."** from the dropdown menu.
 
-   - Copy the contents of `tm_sf_listener.js` and paste it into the Tampermonkey editor.
+   - **Copy and Paste the Script:**
+     - Open the `tm_sf_listener.js` file located in the project directory.
+     - Copy the entire content of `tm_sf_listener.js`.
+     - Paste it into the Tampermonkey editor, replacing any existing code.
 
-4. **Save the Script**
+   - **Save the Script:**
+     - Click **"File"** > **"Save"** or press `Ctrl+S` (Windows/Linux) or `Cmd+S` (macOS) to save the script.
 
-   - Click on **File** > **Save** or press `Ctrl+S`.
+3. **Configure the Script (Optional):**
 
-### Using the Scripts Together
+   - By default, the script sends notifications to `http://localhost:8000`, which matches the server's default port.
+   - If you changed the server port in `config.json`, update the script's URL accordingly:
+     - Open the Tampermonkey dashboard.
+     - Find the **Salesforce Case Number Notifier** script and click **"Edit"**.
+     - Modify the `url` field in the `GM_xmlhttpRequest` section to match your server's port.
 
-1. **Start the Python Script**
+4. **Usage:**
 
-   - Ensure the Python script `tm_sf_server.py` is running.
+   - **Active Case:**
+     - When you view a Salesforce case, the script automatically sends the `case_number` and `company_name` to the local server.
+   - **No Active Case:**
+     - If you stop viewing a case or navigate away, it sends `'NO_CASE'` and `'NO_COMPANY'` to indicate no active case is being viewed.
+   - **File Organization:**
+     - The server will organize downloaded files based on the received information, placing them in the appropriate folders.
 
-2. **Open Salesforce in Your Browser**
+## Tweaking Recommendations
 
-   - Navigate to a Salesforce case.
-
-3. **Download Files from Salesforce**
-
-   - Download attachments or files from a case.
-   - The Tampermonkey script will send the active case number to the Python script.
-   - The Python script will organize the downloaded files into folders based on your configuration.
-
-## Troubleshooting
-
-- **Python Script Errors**
-
-  - Check the console output where the Python script is running for any error messages.
-  - Ensure that the `downloads_dir` in your `config.json` is correct and accessible.
-
-- **Tampermonkey Script Issues**
-
-  - Open the browser console (press `F12` or `Ctrl+Shift+I`) to see if any errors are logged.
-  - Ensure that the Tampermonkey script is enabled and matches your Salesforce domain in the `@match` directive.
-
-- **Local Server Connection Problems**
-
-  - Ensure that no other application is using port `8000`.
-  - If needed, change the port number in both the Python script (`tm_sf_server.py`) and the Tampermonkey script (`tm_sf_listener.js`).
+- **Performance Optimization:**
+  - **Monitor Intervals:** Adjust `monitor_interval` and `file_check_interval` in `config.json` to balance responsiveness and resource usage.
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request on GitHub.
+Contributions are welcome! If you'd like to contribute to the Salesforce Case Download Organizer, please follow these steps:
+
+1. **Fork the Repository:**
+
+   Click the "Fork" button at the top right of the repository page to create your own copy.
+
+2. **Clone Your Fork:**
+
+   ```bash
+   git clone https://github.com/your-username/salesforce-case-download-organizer.git
+   ```
+
+3. **Create a New Branch:**
+
+   ```bash
+   git checkout -b feature/YourFeatureName
+   ```
+
+4. **Make Your Changes:**
+
+   Implement your feature or fix.
+
+5. **Commit Your Changes:**
+
+   ```bash
+   git commit -m "Add feature: YourFeatureName"
+   ```
+
+6. **Push to Your Fork:**
+
+   ```bash
+   git push origin feature/YourFeatureName
+   ```
+
+7. **Open a Pull Request:**
+
+   Navigate to the original repository and open a pull request describing your changes.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT). Feel free to use and modify it as needed.
+
+## Contact
+
+For any questions or support, please reach out through the [GitHub Issues](https://github.com/neledov/salesforce-case-download-organizer/issues) page of the repository.
+
+---
+
+*Thank you for using the Salesforce Case Download Organizer! Your feedback and contributions are highly appreciated.*

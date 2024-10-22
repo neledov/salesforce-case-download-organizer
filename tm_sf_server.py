@@ -2,7 +2,6 @@ import http.server
 import socketserver
 import threading
 import json
-import os
 import time
 import logging
 from pathlib import Path
