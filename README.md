@@ -8,12 +8,10 @@ The **Salesforce Case Download Organizer** automatically organizes your download
 
 ## Features
 
+- **Tampermonkey Integration:** A browser script that communicates active case information to the local server in real-time.
 - **Automatic File Monitoring:** Watches your Downloads folder and organizes new files as they arrive.
 - **Configurable Rules:** Customize how files are categorized based on their extensions and names.
 - **Case-Based Organization:** Sorts files into folders corresponding to your active Salesforce cases and companies.
-- **Tampermonkey Integration:** A browser script that communicates active case information to the local server in real-time.
-- **Graceful Shutdown:** Ensures the server stops smoothly without disrupting ongoing operations.
-- **Robust Logging:** Detailed logs with automatic rotation to help you monitor activities.
 - **Cross-Platform Support:** Compatible with Windows, macOS, and Linux.
 
 ## How It Works
