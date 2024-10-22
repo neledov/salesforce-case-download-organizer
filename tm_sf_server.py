@@ -7,6 +7,7 @@ import time
 import logging
 from pathlib import Path
 from typing import Optional
+import re
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
@@ -15,7 +16,8 @@ PORT = 8000  # Port number for the local server
 CONFIG_FILE = 'config.json'  # Path to the configuration file
 
 # Global state
-case_number: Optional[str] = None
+current_company_name: Optional[str] = None
+current_case_number: Optional[str] = None
 config = {}
 DOWNLOADS_DIR = Path()
 NO_CASE_FOLDER = ''
@@ -27,6 +29,18 @@ assignments_lock = threading.Lock()
 FILE_CHECK_INTERVAL = 0.5  # Default: 0.5 seconds
 MONITOR_INTERVAL = 0.5     # Default: 0.5 seconds
 ERROR_SLEEP = 5            # Default: 5 seconds
+
+def sanitize_filename(name: str) -> str:
+    """
+    Sanitize the folder name to prevent filesystem issues.
+    Removes or replaces characters that are invalid in folder names.
+    """
+    # Replace any character that is not alphanumeric, space, hyphen, or underscore
+    sanitized = re.sub(r'[<>:"/\\|?*]', '_', name)
+    sanitized = sanitized.strip()
+    # Replace multiple spaces or underscores with a single underscore
+    sanitized = re.sub(r'[_\s]+', '_', sanitized)
+    return sanitized
 
 def move_existing_files_to_no_case_folder():
     """
@@ -52,30 +66,48 @@ def move_existing_files_to_no_case_folder():
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
-        global case_number
+        global current_case_number, current_company_name
         try:
             content_length = int(self.headers.get('Content-Length', 0))
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data)
-            if 'case_number' in data:
-                received_case_number = data['case_number']
-                logging.info(f"Received case number: {received_case_number}")
-                with assignments_lock:
-                    if received_case_number == 'NO_CASE':
-                        case_number = None
-                    else:
-                        case_number = received_case_number
-                self.send_response(200)
+            
+            received_case_number = data.get('case_number')
+            received_company_name = data.get('company_name')
+
+            if received_case_number is None or received_company_name is None:
+                logging.error('Both "case_number" and "company_name" must be provided in POST data.')
+                self.send_response(400)
                 self.end_headers()
-                self.wfile.write(b'Case number received')
+                self.wfile.write(b'Both "case_number" and "company_name" must be provided.')
                 return
-            else:
-                logging.error('Case number not found in POST data.')
-        except Exception as e:
-            logging.error(f"Error processing request: {e}")
+
+            logging.info(f"Received Case Number: {received_case_number}, Company Name: {received_company_name}")
+
+            with assignments_lock:
+                if received_case_number == 'NO_CASE' and received_company_name == 'NO_COMPANY':
+                    current_case_number = None
+                    current_company_name = None
+                    logging.info("Set current_case_number and current_company_name to None (NO_CASE and NO_COMPANY).")
+                else:
+                    current_case_number = received_case_number
+                    current_company_name = received_company_name
+                    logging.info(f"Updated current_case_number to {current_case_number} and current_company_name to {current_company_name}.")
+
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b'Case information received successfully.')
+            return
+        except json.JSONDecodeError:
+            logging.error('Invalid JSON in POST data.')
             self.send_response(400)
             self.end_headers()
-            self.wfile.write(b'Invalid request')
+            self.wfile.write(b'Invalid JSON.')
+        except Exception as e:
+            logging.error(f"Error processing request: {e}")
+            self.send_response(500)
+            self.end_headers()
+            self.wfile.write(b'Internal server error.')
 
     def log_message(self, format, *args):
         # Override to prevent logging every GET request to stdout
@@ -166,34 +198,41 @@ def determine_subfolder(filename: str) -> str:
 def monitor_downloads():
     """
     Monitor the Downloads directory for new files and move them accordingly.
-    Each file is assigned to the current case_number at the time of detection.
+    Each file is assigned to the current company_name and case_number at the time of detection.
     """
     while True:
         try:
             for file in DOWNLOADS_DIR.iterdir():
                 if file.is_file() and not file.name.startswith('.') and not file.name.endswith('.download'):
-                    # Skip files already in no_case_folder or case_number folders
+                    # Skip files already in no_case_folder or company/case folders
                     if file.parent == (DOWNLOADS_DIR / NO_CASE_FOLDER):
                         continue
-                    if case_number and file.parent == (DOWNLOADS_DIR / case_number):
-                        continue
+                    if current_company_name and current_case_number:
+                        target_folder = DOWNLOADS_DIR / sanitize_filename(current_company_name) / sanitize_filename(current_case_number)
+                        if file.parent == target_folder:
+                            continue  # Already in the correct folder
+                    else:
+                        # If not assigned to a case, skip if already in no_case_folder
+                        if file.parent == (DOWNLOADS_DIR / NO_CASE_FOLDER):
+                            continue
 
-                    # Acquire lock to assign case_number
+                    # Acquire lock to assign case and company
                     with assignments_lock:
                         if file.name in file_assignments:
                             continue  # Already assigned
-                        assigned_case = case_number  # Capture current case_number
-                        file_assignments[file.name] = assigned_case
+                        assigned_company = current_company_name  # Capture current company
+                        assigned_case = current_case_number    # Capture current case
+                        file_assignments[file.name] = (assigned_company, assigned_case)
 
                     # Check if file is fully downloaded
                     if is_file_fully_downloaded(file):
                         filename = file.name
                         logging.info(f"Detected new file: {filename}")
 
-                        if assigned_case:
+                        if assigned_company and assigned_case:
                             # Determine subfolder based on rules
                             subfolder = determine_subfolder(filename)
-                            target_folder = DOWNLOADS_DIR / assigned_case / subfolder
+                            target_folder = DOWNLOADS_DIR / sanitize_filename(assigned_company) / sanitize_filename(assigned_case) / subfolder
                         else:
                             # Move directly to no_case_folder without subfolders
                             target_folder = DOWNLOADS_DIR / NO_CASE_FOLDER
@@ -212,26 +251,26 @@ def monitor_downloads():
                                 logging.error(f"Error removing existing file {target_filepath.name}: {e}")
                                 # Remove assignment since move failed
                                 with assignments_lock:
-                                    del file_assignments[filename]
+                                    del file_assignments[file.name]
                                 continue  # Skip moving this file
 
                         # Move the file
                         try:
                             file.rename(target_filepath)
-                            if assigned_case:
-                                logging.info(f"Moved {filename} to {target_folder} under case {assigned_case}")
+                            if assigned_company and assigned_case:
+                                logging.info(f"Moved {filename} to {target_folder} under company '{assigned_company}' and case '{assigned_case}'")
                             else:
                                 logging.info(f"Moved {filename} to {target_folder} (no active case)")
                         except Exception as e:
                             logging.error(f"Error moving file {filename} to {target_folder}: {e}")
                             # Remove assignment since move failed
                             with assignments_lock:
-                                del file_assignments[filename]
+                                del file_assignments[file.name]
                             continue  # Skip to the next file
                         finally:
                             # Remove assignment after moving
                             with assignments_lock:
-                                del file_assignments[filename]
+                                del file_assignments[file.name]
             time.sleep(MONITOR_INTERVAL)  # Configurable sleep interval
         except Exception as e:
             logging.error(f"Error in monitor_downloads loop: {e}")
@@ -239,7 +278,7 @@ def monitor_downloads():
 
 def run_server():
     """
-    Start the HTTP server to receive case number notifications.
+    Start the HTTP server to receive case number and company name notifications.
     """
     try:
         with socketserver.TCPServer(("", PORT), Handler) as httpd:

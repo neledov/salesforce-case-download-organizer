@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Salesforce Case Number Notifier
 // @namespace    http://tampermonkey.net/
-// @version      2.7
-// @description  Sends the active Salesforce case number to a local server when it changes or when not viewing a case.
-// @author
+// @version      3.1
+// @description  Sends the active Salesforce case number and company name to a local server when they change or when not viewing a case.
+// @author       Anton Neledov - Palo Alto Networks
 // @match        *://*.lightning.force.com/*
 // @grant        GM_xmlhttpRequest
 // @connect      localhost
@@ -18,43 +18,49 @@
 
     // State variables
     let lastCaseNumber = null;
+    let lastCompanyName = null;
 
     /**
      * Sends data to the local server using GM_xmlhttpRequest.
      * @param {string} caseNumber - The case number to send, or 'NO_CASE'.
+     * @param {string|null} companyName - The company name associated with the case, or 'NO_COMPANY'.
      */
-    function sendCaseNumber(caseNumber) {
+    function sendNotification(caseNumber, companyName) {
         GM_xmlhttpRequest({
             method: 'POST',
             url: 'http://localhost:8000',
             headers: {
                 'Content-Type': 'application/json'
             },
-            data: JSON.stringify({ case_number: caseNumber }),
+            data: JSON.stringify({
+                case_number: caseNumber,
+                company_name: companyName
+            }),
             timeout: 5000, // 5 seconds timeout
             onload: function(response) {
-                console.log(`${LOG_PREFIX} Sent case number: ${caseNumber}`);
+                console.log(`${LOG_PREFIX} Sent case number: ${caseNumber}, Company Name: ${companyName}`);
             },
             onerror: function(error) {
-                console.error(`${LOG_PREFIX} Error sending case number "${caseNumber}":`, error);
+                console.error(`${LOG_PREFIX} Error sending data:`, error);
             },
             ontimeout: function() {
-                console.error(`${LOG_PREFIX} Timeout while sending case number "${caseNumber}".`);
+                console.error(`${LOG_PREFIX} Timeout while sending data.`);
             }
         });
     }
 
     /**
-     * Sends 'NO_CASE' to indicate no active Salesforce case is being viewed.
+     * Sends 'NO_CASE' and 'NO_COMPANY' to indicate no active Salesforce case is being viewed.
      */
-    function sendNoCase() {
-        if (lastCaseNumber === 'NO_CASE') {
-            console.log(`${LOG_PREFIX} Already in 'NO_CASE' state. Skipping.`);
+    function sendNoCaseAndCompany() {
+        if (lastCaseNumber === 'NO_CASE' && lastCompanyName === 'NO_COMPANY') {
+            console.log(`${LOG_PREFIX} Already in 'NO_CASE' and 'NO_COMPANY' state. Skipping.`);
             return;
         }
-        console.log(`${LOG_PREFIX} Sending 'NO_CASE' to server.`);
+        console.log(`${LOG_PREFIX} Sending 'NO_CASE' and 'NO_COMPANY' to server.`);
         lastCaseNumber = 'NO_CASE'; // Update the state before sending
-        sendCaseNumber('NO_CASE');
+        lastCompanyName = 'NO_COMPANY';
+        sendNotification('NO_CASE', 'NO_COMPANY');
     }
 
     /**
@@ -72,29 +78,57 @@
     }
 
     /**
-     * Updates the current case number by checking the active Salesforce case.
-     * Sends the case number if it has changed or 'NO_CASE' if no case is active.
+     * Extracts the company name from a specific section of the Salesforce page using regex.
+     * @returns {string|null} - The company name or null if not found.
+     */
+    function getCompanyName() {
+        // Selector targeting the specific container where the company name resides
+        const containerSelector = 'div.windowViewMode-maximized.active.lafPageHost';
+        const container = document.querySelector(containerSelector);
+        if (!container) {
+            console.warn(`${LOG_PREFIX} Company container not found using selector: "${containerSelector}"`);
+            return null;
+        }
+
+        const regex = /href="\/lightning\/r\/Account\/[^"]+"[^>]*?>.*?<slot[^>]*?>.*?<slot[^>]*?>([^<]+)<\/slot>/;
+        const htmlContent = container.innerHTML;
+        const match = htmlContent.match(regex);
+        if (match) {
+            return match[1].trim();
+        } else {
+            console.warn(`${LOG_PREFIX} Company name not found using the provided regex.`);
+            return null;
+        }
+    }
+
+    /**
+     * Updates the current case number and company name by checking the active Salesforce case.
+     * Sends the case number and company name if they have changed or 'NO_CASE' and 'NO_COMPANY' if no case is active.
      */
     function updateCaseNumber() {
         const currentCaseNumber = getActiveCaseNumber();
+        const currentCompanyName = currentCaseNumber ? getCompanyName() : 'NO_COMPANY';
 
         console.log(`${LOG_PREFIX} Current Case Number: ${currentCaseNumber}`);
+        console.log(`${LOG_PREFIX} Current Company Name: ${currentCompanyName}`);
         console.log(`${LOG_PREFIX} Last Case Number: ${lastCaseNumber}`);
+        console.log(`${LOG_PREFIX} Last Company Name: ${lastCompanyName}`);
 
         if (currentCaseNumber) {
-            if (currentCaseNumber !== lastCaseNumber) {
-                console.log(`${LOG_PREFIX} Active Case Number changed to: ${currentCaseNumber}`);
+            if (currentCaseNumber !== lastCaseNumber || currentCompanyName !== lastCompanyName) {
+                console.log(`${LOG_PREFIX} Active Case Number or Company Name changed.`);
                 lastCaseNumber = currentCaseNumber;
-                sendCaseNumber(currentCaseNumber);
+                lastCompanyName = currentCompanyName;
+                sendNotification(currentCaseNumber, currentCompanyName);
             } else {
-                console.log(`${LOG_PREFIX} Case number unchanged: ${currentCaseNumber}`);
+                console.log(`${LOG_PREFIX} Case number and Company name unchanged.`);
             }
         } else {
-            if (lastCaseNumber !== 'NO_CASE') {
-                console.log(`${LOG_PREFIX} No active case detected. Sending 'NO_CASE'.`);
-                sendNoCase();
+            if (lastCaseNumber !== 'NO_CASE' || lastCompanyName !== 'NO_COMPANY') {
+                console.log(`${LOG_PREFIX} No active case detected. Sending 'NO_CASE' and 'NO_COMPANY'.`);
+                sendNoCaseAndCompany();
             } else {
-                console.log(`${LOG_PREFIX} Already in 'NO_CASE' state.`);
+                console.log(`${LOG_PREFIX} Already in 'NO_CASE' and 'NO_COMPANY' state.`);
             }
         }
     }
@@ -106,8 +140,8 @@
         // When the visibility of the page changes (e.g., tab switch)
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                console.log(`${LOG_PREFIX} Tab hidden. Sending 'NO_CASE'.`);
-                sendNoCase();
+                console.log(`${LOG_PREFIX} Tab hidden. Sending 'NO_CASE' and 'NO_COMPANY'.`);
+                sendNoCaseAndCompany();
             } else {
                 console.log(`${LOG_PREFIX} Tab visible. Updating case number.`);
                 // Delay to allow Salesforce's DOM to update upon becoming visible
@@ -118,8 +152,8 @@
         // Before the window unloads (e.g., tab closure)
         window.addEventListener('beforeunload', () => {
             if (lastCaseNumber !== 'NO_CASE') {
-                console.log(`${LOG_PREFIX} Before unload: Sending 'NO_CASE'.`);
-                sendNoCase();
+                console.log(`${LOG_PREFIX} Before unload: Sending 'NO_CASE' and 'NO_COMPANY'.`);
+                sendNoCaseAndCompany();
             }
         });
 
@@ -131,12 +165,14 @@
      * This is useful for Single Page Applications like Salesforce.
      */
     function initMutationObserver() {
+        let debounceTimer;
         const observer = new MutationObserver(() => {
-            updateCaseNumber();
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(updateCaseNumber, 500); // Debounce to prevent rapid calls
         });
 
         observer.observe(document.body, { childList: true, subtree: true });
-        console.log(`${LOG_PREFIX} MutationObserver initialized.`);
+        console.log(`${LOG_PREFIX} MutationObserver initialized with debouncing.`);
     }
 
     /**
