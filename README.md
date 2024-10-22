@@ -278,11 +278,6 @@ The **Salesforce Case Number Notifier** is a Tampermonkey script that automatica
    - **File Organization:**
      - The server will organize downloaded files based on the received information, placing them in the appropriate folders.
 
-## Tweaking Recommendations
-
-- **Performance Optimization:**
-  - **Monitor Intervals:** Adjust `monitor_interval` and `file_check_interval` in `config.json` to balance responsiveness and resource usage.
-
 ## Contributing
 
 Contributions are welcome! If you'd like to contribute to the Salesforce Case Download Organizer, please follow these steps:
