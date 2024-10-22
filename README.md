@@ -1,6 +1,7 @@
 # Salesforce Case Download Organizer
 
 **Author:** Anton Neledov  
+**Repository:** [https://github.com/neledov/salesforce-case-download-organizer](https://github.com/neledov/salesforce-case-download-organizer)
 
 ## Overview
 
@@ -8,6 +9,7 @@ The **Salesforce Case Download Organizer** automatically organizes your download
 
 ## Features
 
+- **Tampermonkey Integration:** A browser script that communicates active case information to the local server in real-time.
 - **Tampermonkey Integration:** A browser script that communicates active case information to the local server in real-time.
 - **Automatic File Monitoring:** Watches your Downloads folder and organizes new files as they arrive.
 - **Configurable Rules:** Customize how files are categorized based on their extensions and names.
@@ -54,24 +56,36 @@ Ensure you have the following installed on your system:
    cd salesforce-case-download-organizer
    ```
 
-3. **Set Up the Python Environment:**
-
-   It's a good practice to use a virtual environment to manage dependencies.
-
-   ```bash
-   python -m venv venv
-   venv\Scripts\activate
-   ```
-
-4. **Configure the Application:**
+3. **Configure the Application:**
 
    Open the `config.json` file in a text editor and adjust the settings as needed. Refer to the [Configuration](#configuration) section for details.
 
-5. **Run the Server:**
+4. **Run the Server:**
 
    ```bash
    python server.py
    ```
+
+5. **Install the Tampermonkey Script:**
+
+   - **Create a New Script:**
+     - Click on the Tampermonkey icon in your browser toolbar.
+     - Select **"Create a new script..."** from the dropdown menu.
+
+   - **Copy and Paste the Script:**
+     - Open the `tm_sf_listener.js` file located in the project directory.
+     - Copy the entire content of `tm_sf_listener.js`.
+     - Paste it into the Tampermonkey editor, replacing any existing code.
+
+   - **Save the Script:**
+     - Click **"File"** > **"Save"** or press `Ctrl+S` to save the script.
+
+   - **Configure the Script (Optional):**
+     - By default, the script sends notifications to `http://localhost:8000`, which matches the server's default port.
+     - If you changed the server port in `config.json`, update the script's URL accordingly:
+       - Open the Tampermonkey dashboard.
+       - Find the **Salesforce Case Number Notifier** script and click **"Edit"**.
+       - Modify the `url` field in the `GM_xmlhttpRequest` section to match your server's port.
 
 #### macOS
 
@@ -91,24 +105,36 @@ Ensure you have the following installed on your system:
    cd salesforce-case-download-organizer
    ```
 
-3. **Set Up the Python Environment:**
-
-   It's a good practice to use a virtual environment to manage dependencies.
-
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-4. **Configure the Application:**
+3. **Configure the Application:**
 
    Open the `config.json` file in a text editor and adjust the settings as needed. Refer to the [Configuration](#configuration) section for details.
 
-5. **Run the Server:**
+4. **Run the Server:**
 
    ```bash
    python server.py
    ```
+
+5. **Install the Tampermonkey Script:**
+
+   - **Create a New Script:**
+     - Click on the Tampermonkey icon in your browser toolbar.
+     - Select **"Create a new script..."** from the dropdown menu.
+
+   - **Copy and Paste the Script:**
+     - Open the `tm_sf_listener.js` file located in the project directory.
+     - Copy the entire content of `tm_sf_listener.js`.
+     - Paste it into the Tampermonkey editor, replacing any existing code.
+
+   - **Save the Script:**
+     - Click **"File"** > **"Save"** or press `Cmd+S` to save the script.
+
+   - **Configure the Script (Optional):**
+     - By default, the script sends notifications to `http://localhost:8000`, which matches the server's default port.
+     - If you changed the server port in `config.json`, update the script's URL accordingly:
+       - Open the Tampermonkey dashboard.
+       - Find the **Salesforce Case Number Notifier** script and click **"Edit"**.
+       - Modify the `url` field in the `GM_xmlhttpRequest` section to match your server's port.
 
 #### Linux
 
@@ -128,26 +154,38 @@ Ensure you have the following installed on your system:
    cd salesforce-case-download-organizer
    ```
 
-3. **Set Up the Python Environment:**
-
-   It's a good practice to use a virtual environment to manage dependencies.
-
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   ```
-
-4. **Configure the Application:**
+3. **Configure the Application:**
 
    Open the `config.json` file in a text editor and adjust the settings as needed. Refer to the [Configuration](#configuration) section for details.
 
-5. **Run the Server:**
+4. **Run the Server:**
 
    ```bash
    python server.py
    ```
 
-## Configuration
+5. **Install the Tampermonkey Script:**
+
+   - **Create a New Script:**
+     - Click on the Tampermonkey icon in your browser toolbar.
+     - Select **"Create a new script..."** from the dropdown menu.
+
+   - **Copy and Paste the Script:**
+     - Open the `tm_sf_listener.js` file located in the project directory.
+     - Copy the entire content of `tm_sf_listener.js`.
+     - Paste it into the Tampermonkey editor, replacing any existing code.
+
+   - **Save the Script:**
+     - Click **"File"** > **"Save"** or press `Ctrl+S` to save the script.
+
+   - **Configure the Script (Optional):**
+     - By default, the script sends notifications to `http://localhost:8000`, which matches the server's default port.
+     - If you changed the server port in `config.json`, update the script's URL accordingly:
+       - Open the Tampermonkey dashboard.
+       - Find the **Salesforce Case Number Notifier** script and click **"Edit"**.
+       - Modify the `url` field in the `GM_xmlhttpRequest` section to match your server's port.
+
+## Configuration (Optional)
 
 The application uses a `config.json` file to manage settings. Below is an example configuration:
 
