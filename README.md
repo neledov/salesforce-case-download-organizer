@@ -52,7 +52,7 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 
 ## Key Features
 
-- **Real-Time Integration:** Communicates active Salesforce case information directly from your browser.
+- **Real-Time Integration:** Sends active Salesforce case information directly from your browser.
 - **Automatic File Monitoring:** Continuously watches your Downloads folder and organizes new files instantly.
 - **Customizable Rules:** Define how files are categorized based on file types and keywords.
 - **Cross-Platform Executables:** Available for both Windows and macOS, eliminating the need for a Python environment.
@@ -63,7 +63,6 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 ```
 +---------------------+
 | Tampermonkey Script |
-| (Browser Extension) |
 +----------+----------+
            |
            | HTTP POST
@@ -76,13 +75,12 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
            | |
            v |
 +----------+----------+
-|   Downloads Folder  |
-|  (Organized Files)  |
+|   Downloads Folder  |                     
 +---------------------+
 ```
 
 1. **Tampermonkey Script:** Captures active Salesforce case details from your browser and sends them to the local executable.
-2. **Local Executable:** Receives case information, monitors the Downloads folder, and organizes files based on predefined rules.
+2. **Local Server:** Receives case information, monitors the Downloads folder, and organizes files based on predefined rules.
 3. **Cleanup Scheduler (Optional):** Periodically deletes files older than a specified threshold to keep your Downloads folder uncluttered.
 
 ## Installation
@@ -94,7 +92,6 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
   - [Firefox](https://addons.mozilla.org/firefox/addon/tampermonkey/)
   - [Edge](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/)
   - [Safari](https://www.tampermonkey.net/?browser=safari)
-- **Download Executable:** Obtain the appropriate executable for your operating system from the [Releases](https://github.com/neledov/salesforce-case-download-organizer/releases) page.
 
 ### Installation Steps
 
