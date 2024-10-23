@@ -112,7 +112,7 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
        - Open `config.json` with a text editor like Notepad or Visual Studio Code.
        - Set your Downloads directory path. Example:
          ```json
-         "downloads_dir": "C:\Users\YourUsername\Downloads"
+         "downloads_dir": "C:\\Users\\YourUsername\\Downloads"
          ```
        - Customize file organization rules as needed.
        - **Optional:** Enable file cleanup by setting `"cleanup_enabled": true` and configuring thresholds.
@@ -141,7 +141,7 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
        - Open `config.json` with a text editor like TextEdit or Visual Studio Code.
        - Set your Downloads directory path. Example:
          ```json
-         "downloads_dir": "//Users//YourUsername//Downloads"
+         "downloads_dir": "/Users/YourUsername/Downloads"
          ```
        - Customize file organization rules as needed.
        - **Optional:** Enable file cleanup by setting `"cleanup_enabled": true` and configuring thresholds.
