@@ -9,6 +9,8 @@ from typing import Optional, Dict, Any
 import re
 import signal
 from logging.handlers import RotatingFileHandler
+import datetime
+import os
 
 # ----------------------------- Configuration -----------------------------
 
@@ -51,7 +53,10 @@ DEFAULT_CONFIG: Dict[str, Any] = {
     "default_subfolder": "other",
     "file_check_interval": 0.5,  
     "monitor_interval": 0.5,     
-    "error_sleep": 5             
+    "error_sleep": 5,
+    "cleanup_enabled": False,
+    "cleanup_age_threshold": "6m",
+    "cleanup_interval": "1d"  # Optional: Clean up every day
 }
 
 # ----------------------------- Logging Setup -----------------------------
@@ -80,6 +85,9 @@ FILE_CHECK_INTERVAL = 0.5  # Default: 0.5 seconds
 MONITOR_INTERVAL = 0.5     # Default: 0.5 seconds
 ERROR_SLEEP = 5            # Default: 5 seconds
 PORT = 8000                # Default port
+CLEANUP_ENABLED = False
+CLEANUP_AGE_THRESHOLD = "6m"
+CLEANUP_INTERVAL = "1d"    # Optional
 
 # ----------------------------- Utility Functions --------------------------
 
@@ -127,6 +135,7 @@ def load_config():
     """
     global config, DOWNLOADS_DIR, NO_CASE_FOLDER, DEFAULT_SUBFOLDER
     global FILE_CHECK_INTERVAL, MONITOR_INTERVAL, ERROR_SLEEP, PORT
+    global CLEANUP_ENABLED, CLEANUP_AGE_THRESHOLD, CLEANUP_INTERVAL
 
     try:
         with open(CONFIG_FILE, 'r') as f:
@@ -153,6 +162,9 @@ def load_config():
     MONITOR_INTERVAL = config.get('monitor_interval', 0.5)
     ERROR_SLEEP = config.get('error_sleep', 5)
     PORT = config.get('server_port', 8000)
+    CLEANUP_ENABLED = config.get('cleanup_enabled', False)
+    CLEANUP_AGE_THRESHOLD = config.get('cleanup_age_threshold', "6m")
+    CLEANUP_INTERVAL = config.get('cleanup_interval', "1d")  # Optional
 
 def determine_subfolder(filename: str) -> str:
     """
@@ -179,6 +191,100 @@ def determine_subfolder(filename: str) -> str:
             logging.error(f"Error processing rule {rule}: {e}")
     # If no rules match, return the default subfolder
     return DEFAULT_SUBFOLDER
+
+# ----------------------------- Cleanup Functions -------------------------
+
+def parse_time_threshold(threshold_str: str) -> Optional[datetime.timedelta]:
+    """
+    Parses a time threshold string (e.g., '1m', '6m', '1y') into a timedelta object.
+    Supports days (d), weeks (w), months (m), and years (y).
+    Note: Months and years are approximated (30 days for a month, 365 days for a year).
+    
+    Args:
+        threshold_str (str): The time threshold string.
+
+    Returns:
+        Optional[datetime.timedelta]: The corresponding timedelta or None if invalid format.
+    """
+    match = re.fullmatch(r'(\d+)([dwmy])', threshold_str.strip().lower())
+    if not match:
+        logging.error(f"Invalid cleanup_age_threshold format: '{threshold_str}'. Expected formats like '1m', '6m', '1y'.")
+        return None
+
+    value, unit = match.groups()
+    value = int(value)
+
+    if unit == 'd':
+        return datetime.timedelta(days=value)
+    elif unit == 'w':
+        return datetime.timedelta(weeks=value)
+    elif unit == 'm':
+        return datetime.timedelta(days=30 * value)  # Approximation
+    elif unit == 'y':
+        return datetime.timedelta(days=365 * value)  # Approximation
+    else:
+        logging.error(f"Unsupported time unit in cleanup_age_threshold: '{unit}'.")
+        return None
+
+def cleanup_old_files():
+    """
+    Removes files in the downloads directory older than the configured threshold.
+    """
+    if not CLEANUP_ENABLED:
+        logging.info("File cleanup is disabled. Skipping cleanup process.")
+        return
+
+    threshold = parse_time_threshold(CLEANUP_AGE_THRESHOLD)
+    if not threshold:
+        logging.error("Failed to parse cleanup_age_threshold. Skipping cleanup process.")
+        return
+
+    cutoff_time = datetime.datetime.now() - threshold
+    logging.info(f"Starting cleanup: Removing files older than {CLEANUP_AGE_THRESHOLD} (before {cutoff_time})")
+
+    try:
+        removed_files = 0
+        for root, dirs, files in os.walk(DOWNLOADS_DIR):
+            for file in files:
+                file_path = Path(root) / file
+                try:
+                    # Skip system folders like no_case_folder and default_subfolder
+                    relative_path = file_path.relative_to(DOWNLOADS_DIR)
+                    if relative_path.parts[0] in [NO_CASE_FOLDER, DEFAULT_SUBFOLDER]:
+                        continue  # Skip system folders
+
+                    # Get file's last modification time
+                    file_mtime = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
+                    if file_mtime < cutoff_time:
+                        # Attempt to remove the file
+                        file_path.unlink()
+                        logging.info(f"Removed old file: {file_path}")
+                        removed_files += 1
+                except Exception as e:
+                    logging.error(f"Error removing file {file_path}: {e}")
+
+        logging.info(f"Cleanup completed. Total files removed: {removed_files}")
+    except Exception as e:
+        logging.error(f"Error during cleanup process: {e}")
+
+def cleanup_scheduler():
+    """
+    Schedules periodic cleanup based on the configured interval.
+    """
+    if not CLEANUP_ENABLED:
+        logging.info("File cleanup is disabled. Cleanup scheduler not started.")
+        return
+
+    interval = parse_time_threshold(CLEANUP_INTERVAL)
+    if not interval:
+        logging.error("Failed to parse cleanup_interval. Cleanup scheduler not started.")
+        return
+
+    logging.info(f"Cleanup scheduler started. Next cleanup in {CLEANUP_INTERVAL}.")
+    while True:
+        time.sleep(interval.total_seconds())
+        cleanup_old_files()
+        logging.info(f"Next cleanup scheduled in {CLEANUP_INTERVAL}.")
 
 # ----------------------------- Server Handler -----------------------------
 
@@ -350,6 +456,100 @@ def monitor_downloads():
             logging.error(f"Error in monitor_downloads loop: {e}")
             time.sleep(ERROR_SLEEP)  # Configurable error sleep intervals
 
+# ----------------------------- Cleanup Functions -------------------------
+
+def parse_time_threshold(threshold_str: str) -> Optional[datetime.timedelta]:
+    """
+    Parses a time threshold string (e.g., '1m', '6m', '1y') into a timedelta object.
+    Supports days (d), weeks (w), months (m), and years (y).
+    Note: Months and years are approximated (30 days for a month, 365 days for a year).
+    
+    Args:
+        threshold_str (str): The time threshold string.
+
+    Returns:
+        Optional[datetime.timedelta]: The corresponding timedelta or None if invalid format.
+    """
+    match = re.fullmatch(r'(\d+)([dwmy])', threshold_str.strip().lower())
+    if not match:
+        logging.error(f"Invalid cleanup_age_threshold format: '{threshold_str}'. Expected formats like '1m', '6m', '1y'.")
+        return None
+
+    value, unit = match.groups()
+    value = int(value)
+
+    if unit == 'd':
+        return datetime.timedelta(days=value)
+    elif unit == 'w':
+        return datetime.timedelta(weeks=value)
+    elif unit == 'm':
+        return datetime.timedelta(days=30 * value)  # Approximation
+    elif unit == 'y':
+        return datetime.timedelta(days=365 * value)  # Approximation
+    else:
+        logging.error(f"Unsupported time unit in cleanup_age_threshold: '{unit}'.")
+        return None
+
+def cleanup_old_files():
+    """
+    Removes files in the downloads directory older than the configured threshold.
+    """
+    if not CLEANUP_ENABLED:
+        logging.info("File cleanup is disabled. Skipping cleanup process.")
+        return
+
+    threshold = parse_time_threshold(CLEANUP_AGE_THRESHOLD)
+    if not threshold:
+        logging.error("Failed to parse cleanup_age_threshold. Skipping cleanup process.")
+        return
+
+    cutoff_time = datetime.datetime.now() - threshold
+    logging.info(f"Starting cleanup: Removing files older than {CLEANUP_AGE_THRESHOLD} (before {cutoff_time})")
+
+    try:
+        removed_files = 0
+        for root, dirs, files in os.walk(DOWNLOADS_DIR):
+            for file in files:
+                file_path = Path(root) / file
+                try:
+                    # Skip system folders like no_case_folder and default_subfolder
+                    relative_path = file_path.relative_to(DOWNLOADS_DIR)
+                    if relative_path.parts[0] in [NO_CASE_FOLDER, DEFAULT_SUBFOLDER]:
+                        continue  # Skip system folders
+
+                    # Get file's last modification time
+                    file_mtime = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
+                    if file_mtime < cutoff_time:
+                        # Attempt to remove the file
+                        file_path.unlink()
+                        logging.info(f"Removed old file: {file_path}")
+                        removed_files += 1
+                except Exception as e:
+                    logging.error(f"Error removing file {file_path}: {e}")
+
+        logging.info(f"Cleanup completed. Total files removed: {removed_files}")
+    except Exception as e:
+        logging.error(f"Error during cleanup process: {e}")
+
+def cleanup_scheduler():
+    """
+    Schedules periodic cleanup based on the configured interval.
+    """
+    if not CLEANUP_ENABLED:
+        logging.info("File cleanup is disabled. Cleanup scheduler not started.")
+        return
+
+    interval = parse_time_threshold(CLEANUP_INTERVAL)
+    if not interval:
+        logging.error("Failed to parse cleanup_interval. Cleanup scheduler not started.")
+        return
+
+    logging.info(f"Cleanup scheduler started. Next cleanup in {CLEANUP_INTERVAL}.")
+    while True:
+        time.sleep(interval.total_seconds())
+        cleanup_old_files()
+        logging.info(f"Next cleanup scheduled in {CLEANUP_INTERVAL}.")
+
 # ----------------------------- Server Initialization ----------------------
 
 def run_server():
@@ -372,6 +572,10 @@ def run_server():
     except Exception as e:
         logging.error(f"Error starting server: {e}")
 
+# ----------------------------- Cleanup Functions (Reiterated) -------------------------
+
+# (Already defined above)
+
 # ----------------------------- Main Execution -----------------------------
 
 if __name__ == '__main__':
@@ -386,6 +590,14 @@ if __name__ == '__main__':
 
         # Move existing files to 'no_case_folder'
         move_existing_files_to_no_case_folder()
+
+        # Perform cleanup if enabled
+        cleanup_old_files()
+
+        # Start cleanup scheduler in a separate thread if periodic cleanup is desired
+        if CLEANUP_ENABLED and CLEANUP_INTERVAL:
+            cleanup_scheduler_thread = threading.Thread(target=cleanup_scheduler, daemon=True)
+            cleanup_scheduler_thread.start()
 
         # Start monitoring downloads in a separate thread
         monitor_thread = threading.Thread(target=monitor_downloads, daemon=True)

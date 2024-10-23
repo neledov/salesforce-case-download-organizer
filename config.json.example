@@ -1,38 +1,41 @@
 {
-  "no_case_folder": "Other_downloads",
-  "downloads_dir": "<path to your dir>",
-  "server_port": 8000,
-  "rules": [
-      {
-          "subfolder": "Screenshots",
-          "extensions": [".jpg", ".jpeg", ".png", ".gif"]
-      },
-      {
-          "subfolder": "documents",
-          "extensions": [".pdf", ".docx", ".txt"],
-          "filename_contains": ["report", "summary"]
-      },
-      {
-          "filename_contains": "log",
-          "subfolder": "Logs",
-          "extensions": [".zip", ".tar", ".gz"]
-      },
-      {
-          "subfolder": "Scripts",
-          "extensions": [".py", ".sh"],
-          "filename_contains": ["script", "run"]
-      },
-      {
-          "subfolder": "Playbooks",
-          "extensions": [".yml"]
-      },
-      {
-          "subfolder": "HAR",
-          "extensions": [".har"]
-      }
-  ],
-  "default_subfolder": "other",
-  "file_check_interval": 0.5,  
-  "monitor_interval": 0.5,     
-  "error_sleep": 5             
-}
+    "no_case_folder": "Other_downloads",
+    "downloads_dir": "<path to your downloads dir>",
+    "server_port": 8000,
+    "rules": [
+        {
+            "subfolder": "Screenshots",
+            "extensions": [".jpg", ".jpeg", ".png", ".gif"]
+        },
+        {
+            "subfolder": "documents",
+            "extensions": [".pdf", ".docx", ".txt"],
+            "filename_contains": ["report", "summary"]
+        },
+        {
+            "filename_contains": "log",
+            "subfolder": "Logs",
+            "extensions": [".zip", ".tar", ".gz"]
+        },
+        {
+            "subfolder": "Scripts",
+            "extensions": [".py", ".sh"],
+            "filename_contains": ["script", "run"]
+        },
+        {
+            "subfolder": "Playbooks",
+            "extensions": [".yml"]
+        },
+        {
+            "subfolder": "HAR",
+            "extensions": [".har"]
+        }
+    ],
+    "default_subfolder": "other",
+    "file_check_interval": 0.5,  
+    "monitor_interval": 0.5,     
+    "error_sleep": 5,
+    "cleanup_enabled": true,
+    "cleanup_age_threshold": "1d"
+  }
+  
