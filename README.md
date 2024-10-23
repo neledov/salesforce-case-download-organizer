@@ -47,8 +47,6 @@ This application was developed in response to the **ban of unpacked browser exte
 - **Tampermonkey** was chosen as the user agent because it allows the creation and deployment of user scripts within corporate browsers without requiring unpacked extensions.
 - **Python** was selected as the server base for its cross-platform compatibility, robust file handling capabilities, and ease of integration with existing systems.
 
-This combination ensures that users can efficiently organize their Salesforce-related downloads without violating corporate IT policies.
-
 ## Overview
 
 The **Salesforce Case Download Organizer** (SCDO) automatically organizes your downloaded files based on active Salesforce cases and associated companies, keeping your Downloads folder tidy and efficient.
