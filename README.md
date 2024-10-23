@@ -66,7 +66,7 @@ Ensure you have the following installed on your system:
 - **Python 3.6 or higher:** Download from the [official Python website](https://www.python.org/downloads/).
 - **Git:** To clone the repository, download it from [here](https://git-scm.com/downloads), or you can download the ZIP file directly from GitHub.
 - **Tampermonkey Extension:** Install Tampermonkey in your preferred browser:
-  - [Chrome](https://chrome.google.com/webstore/detail/tampermonkey/)
+  - [Chrome](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
   - [Firefox](https://addons.mozilla.org/firefox/addon/tampermonkey/)
   - [Edge](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/)
   - [Safari](https://www.tampermonkey.net/?browser=safari)
