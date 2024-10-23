@@ -1,12 +1,15 @@
 # Salesforce Case Download Organizer
+```
+     _________
+    /        /|
+   /        / |
+  /________/  |
+  |  SCDO  |  |
+  |  0  0  |  |
+  | \____/ | /
+  |________|/
 
-  _____ _____  _____  _____  
- / ____|  __ \|  __ \|  __ \ 
-| (___ | |  | | |  | | |  | |
- \___ \| |  | | |  | | |  | |
- ____) | |__| | |__| | |__| |
-|_____/|_____/|_____/|_____/ 
-
+```
 
 **Author:** Anton Neledov  
 **Repository:** [https://github.com/neledov/salesforce-case-download-organizer](https://github.com/neledov/salesforce-case-download-organizer)
