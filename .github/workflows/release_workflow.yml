@@ -1,0 +1,115 @@
+name: Build and Release Executables
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    name: Build Windows Executable
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'  # Specify the Python version you use
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build Executable
+        run: |
+          pyinstaller --onefile tm_sf_server.py
+
+      - name: Upload Windows Executable Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tm_sf_server-windows
+          path: dist\tm_sf_server.exe
+
+  build-mac:
+    name: Build macOS Executable
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build Executable
+        run: |
+          pyinstaller --onefile tm_sf_server.py
+
+      - name: Upload macOS Executable Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: tm_sf_server-mac
+          path: dist/tm_sf_server
+
+  release:
+    name: Create GitHub Release
+    needs: [build-windows, build-mac]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows Executable
+        uses: actions/download-artifact@v3
+        with:
+          name: tm_sf_server-windows
+
+      - name: Download macOS Executable
+        uses: actions/download-artifact@v3
+        with:
+          name: tm_sf_server-mac
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          release_name: Release v1.0.${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Windows Executable to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: tm_sf_server.exe
+          asset_name: tm_sf_server-windows.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload macOS Executable to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: tm_sf_server
+          asset_name: tm_sf_server-mac
+          asset_content_type: application/octet-stream
