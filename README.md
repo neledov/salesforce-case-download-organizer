@@ -48,7 +48,7 @@ In many corporate environments, **unpacked browser extensions are not permitted*
 
 ## Overview
 
-The **Salesforce Case Download Organizer** (SCDO) automatically organizes your downloaded files based on active Salesforce cases and associated companies. It keeps your Downloads folder tidy, ensuring that your files are easily accessible and well-organized without manual intervention.
+The **Salesforce Case Download Organizer** (SCDO) automatically organizes your downloaded files based on active Salesforce cases and associated companies. It keeps your downloads folder tidy, ensuring that your files are easily accessible and well-organized without manual intervention.
 
 ## Key Features
 
@@ -56,8 +56,6 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 - **Automatic File Monitoring:** Continuously watches your Downloads folder and organizes new files instantly.
 - **Customizable Rules:** Define how files are categorized based on file types and keywords.
 - **Cross-Platform Executables:** Available for both Windows and macOS, eliminating the need for a Python environment.
-- **Graceful Shutdown:** Easily stop the server by typing `q` in the console.
-- **Comprehensive Logging:** Maintains a `server.log` file for monitoring and troubleshooting.
 - **Optional File Cleanup:** Automatically removes old files based on your settings to maintain an organized directory.
 
 ## How It Works
@@ -85,8 +83,7 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 
 1. **Tampermonkey Script:** Captures active Salesforce case details from your browser and sends them to the local executable.
 2. **Local Executable:** Receives case information, monitors the Downloads folder, and organizes files based on predefined rules.
-3. **Downloads Folder:** Your files are automatically organized into designated folders.
-4. **Cleanup Scheduler (Optional):** Periodically deletes files older than a specified threshold to keep your Downloads folder uncluttered.
+3. **Cleanup Scheduler (Optional):** Periodically deletes files older than a specified threshold to keep your Downloads folder uncluttered.
 
 ## Installation
 
@@ -139,7 +136,7 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 2. **Configure the Application:**
    - **Place Files Together:** Ensure `tm_sf_server-mac` and `config.json.example` are in the same directory.
    - **Set Up Configuration:**
-     - Copy `config.json.example` and rename the copy to `config.json`.
+     - Copy [`config.json.example`](https://github.com/neledov/salesforce-case-download-organizer/blob/main/config.json.example) and rename the copy to `config.json`.
      - **Edit `config.json`:**
        - Open `config.json` with a text editor like TextEdit or Visual Studio Code.
        - Set your Downloads directory path. Example:
