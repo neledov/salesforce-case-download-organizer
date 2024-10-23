@@ -114,13 +114,10 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
          ```json
          "downloads_dir": "C:\\Users\\YourUsername\\Downloads"
          ```
-       - Customize file organization rules as needed.
-       - **Optional:** Enable file cleanup by setting `"cleanup_enabled": true` and configuring thresholds.
 
 3. **Run the Executable:**
    - Double-click `tm_sf_server-windows.exe`.
    - The console will display an ASCII art logo indicating the server is running.
-   - **Troubleshooting:** If the server doesn't start, check the `server.log` file for error messages.
 
 4. **Install the Tampermonkey Script:**
    - Open Tampermonkey in your browser.
@@ -143,8 +140,6 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
          ```json
          "downloads_dir": "/Users/YourUsername/Downloads"
          ```
-       - Customize file organization rules as needed.
-       - **Optional:** Enable file cleanup by setting `"cleanup_enabled": true` and configuring thresholds.
 
 3. **Run the Executable:**
    - Open Terminal and navigate to the executable's directory.
@@ -157,7 +152,6 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
      ./tm_sf_server-mac
      ```
    - The console will display an ASCII art logo indicating the server is running.
-   - **Troubleshooting:** If the server doesn't start, check the `server.log` file for error messages.
 
 4. **Install the Tampermonkey Script:**
    - Open Tampermonkey in your browser.
@@ -187,15 +181,12 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
          ```json
          "downloads_dir": "/home/YourUsername/Downloads"
          ```
-       - Customize file organization rules as needed.
-       - **Optional:** Enable file cleanup by setting `"cleanup_enabled": true` and configuring thresholds.
 
 4. **Run the Server:**
    ```bash
    python tm_sf_server.py
    ```
    - The console will display an ASCII art logo indicating the server is running.
-   - **Troubleshooting:** If the server doesn't start, check the `server.log` file for error messages.
 
 5. **Install the Tampermonkey Script:**
    - Open Tampermonkey in your browser.
@@ -206,9 +197,6 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 
 - **Keep the Salesforce Case Tab Active:**  
   Ensure you're on the active Salesforce case tab while downloading files to allow accurate association.
-
-- **Monitor `server.log`:**  
-  If the server fails to start or behaves unexpectedly, check the `server.log` file in the executable's directory for detailed error messages.
 
 ## Troubleshooting
 
