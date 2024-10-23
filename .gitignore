@@ -1,6 +1,8 @@
-# Ignore virtual environment directories
-venv/
+__pycache__/
+*.pyc
+builds/win/
+dist/
+*.spec
 server.log
-# Ignore configuration files
 config.json
-.DS_Store
+venv
