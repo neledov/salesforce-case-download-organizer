@@ -1,5 +1,13 @@
 # Salesforce Case Download Organizer
 
+  _____ _____  _____  _____  
+ / ____|  __ \|  __ \|  __ \ 
+| (___ | |  | | |  | | |  | |
+ \___ \| |  | | |  | | |  | |
+ ____) | |__| | |__| | |__| |
+|_____/|_____/|_____/|_____/ 
+
+
 **Author:** Anton Neledov  
 **Repository:** [https://github.com/neledov/salesforce-case-download-organizer](https://github.com/neledov/salesforce-case-download-organizer)
 
@@ -17,9 +25,34 @@ The **Salesforce Case Download Organizer** automatically organizes your download
 
 ## How It Works
 
-1. **Tampermonkey Script:** When you view or stop viewing a Salesforce case in your browser, the Tampermonkey script sends the active case number and company name to the local Python server.
-2. **Python Server:** Continuously monitors your Downloads directory for new files. Based on the received case information, it organizes downloaded files into appropriate folders following the defined rules.
-3. **File Organization:** Files are categorized into subfolders like `Screenshots`, `Documents`, etc., within folders named after the company and case number.
+```
++---------------------+          HTTP POST (Port 8000)          +---------------------+
+| Tampermonkey Script | --------------------------------------->|  Python Server      |
+| (Browser Extension) |                                         |  (Listening on      |
++---------------------+                                         |   Port 8000)        |
+                                                                +---------------------+
+                                                                          |
+                                                                          | Disk Operations
+                                                                          v
+                                                                +---------------------+
+                                                                |  Downloads Folder   |
+                                                                |  (File Organization)|
+                                                                +---------------------+
+```
+
+### Component Descriptions
+
+1. **Tampermonkey Script (Browser Extension):**
+   - **Function:** Detects when you view or stop viewing a Salesforce case in your browser.
+   - **Operation:** Captures the active case number and company name from the Salesforce Lightning interface and sends this information to the Python server via an HTTP POST request on port `8000`.
+
+2. **Python Server (Listening on Port 8000):**
+   - **Function:** Receives case information from the Tampermonkey script.
+   - **Operation:** Monitors the Downloads directory for new files. Based on the received case data and predefined rules, it organizes incoming files into the appropriate folders.
+
+3. **Downloads Folder (File Organization):**
+   - **Function:** Serves as the target directory for organizing downloaded files.
+   - **Operation:** The Python server moves and sorts files into subfolders (e.g., `Screenshots`, `Documents`) within folders named after the associated company and case number.
 
 ## Installation
 
@@ -39,40 +72,82 @@ Ensure you have the following installed on your system:
 
 #### Windows
 
-1. **Clone the Repository:**
+1. **Clone the Repository with VSCode:**
 
-   Open Command Prompt and run:
+   - **Open Visual Studio Code (VSCode):**
+     - If you don't have VSCode installed, download it from the [official website](https://code.visualstudio.com/).
 
-   ```bash
-   git clone https://github.com/neledov/salesforce-case-download-organizer.git
-   ```
+   - **Clone the Repository:**
+     - Click on the **"Source Control"** icon in the sidebar or press `Ctrl+Shift+G`.
+     - Click on **"Clone Repository"**.
+     - Enter the repository URL: `https://github.com/neledov/salesforce-case-download-organizer.git`
+     - Choose a local directory where you want to clone the repository.
+     - After cloning, open the repository folder in VSCode.
 
-   *Alternatively, download the ZIP file from the [GitHub repository](https://github.com/neledov/salesforce-case-download-organizer) and extract it.*
+2. **Configure the Application:**
 
-2. **Navigate to the Project Directory:**
+   - Open the `config.json` file in VSCode.
+   - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
 
-   ```bash
-   cd salesforce-case-download-organizer
-   ```
+     ```json
+     {
+         "no_case_folder": "Other_downloads",
+         "downloads_dir": "C:/Users/YourUsername/Downloads",
+         "server_port": 8000,
+         "rules": [
+             {
+                 "subfolder": "Screenshots",
+                 "extensions": [".jpg", ".jpeg", ".png", ".gif"]
+             },
+             {
+                 "subfolder": "Documents",
+                 "extensions": [".pdf", ".docx", ".txt"],
+                 "filename_contains": ["report", "summary"]
+             },
+             {
+                 "subfolder": "Logs",
+                 "extensions": [".zip", ".tar", ".gz"],
+                 "filename_contains": ["log"]
+             },
+             {
+                 "subfolder": "Scripts",
+                 "extensions": [".py", ".sh"],
+                 "filename_contains": ["script", "run"]
+             },
+             {
+                 "subfolder": "Playbooks",
+                 "extensions": [".yml"]
+             },
+             {
+                 "subfolder": "HAR",
+                 "extensions": [".har"]
+             }
+         ],
+         "default_subfolder": "other",
+         "file_check_interval": 0.5,
+         "monitor_interval": 0.5,
+         "error_sleep": 5
+     }
+     ```
 
-3. **Configure the Application:**
+3. **Run the Python Server:**
 
-   Open the `config.json` file in a text editor and adjust the settings as needed. Refer to the [Configuration](#configuration) section for details.
+   - Open the integrated terminal in VSCode by clicking **"Terminal"** > **"New Terminal"** or pressing `` Ctrl+` ``.
+   - Ensure you're in the project directory.
+   - Run the server script:
 
-4. **Run the Server:**
+     ```bash
+     python tm_sf_server.py
+     ```
 
-   ```bash
-   python server.py
-   ```
-
-5. **Install the Tampermonkey Script:**
+4. **Install the Tampermonkey Script:**
 
    - **Create a New Script:**
      - Click on the Tampermonkey icon in your browser toolbar.
      - Select **"Create a new script..."** from the dropdown menu.
 
    - **Copy and Paste the Script:**
-     - Open the `tm_sf_listener.js` file located in the project directory.
+     - Open the `tm_sf_listener.js` file located in the project directory using VSCode.
      - Copy the entire content of `tm_sf_listener.js`.
      - Paste it into the Tampermonkey editor, replacing any existing code.
 
@@ -85,6 +160,8 @@ Ensure you have the following installed on your system:
        - Open the Tampermonkey dashboard.
        - Find the **Salesforce Case Number Notifier** script and click **"Edit"**.
        - Modify the `url` field in the `GM_xmlhttpRequest` section to match your server's port.
+
+   - **Note:** It may take some time for the Tampermonkey script to intercept the URL and launch on the page. If you encounter issues, try refreshing the Salesforce Lightning tab or restarting your browser.
 
 #### macOS
 
@@ -106,12 +183,54 @@ Ensure you have the following installed on your system:
 
 3. **Configure the Application:**
 
-   Open the `config.json` file in a text editor and adjust the settings as needed. Refer to the [Configuration](#configuration) section for details.
+   - Open the `config.json` file in your preferred text editor.
+   - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
 
-4. **Run the Server:**
+     ```json
+     {
+         "no_case_folder": "Other_downloads",
+         "downloads_dir": "/Users/YourUsername/Downloads",
+         "server_port": 8000,
+         "rules": [
+             {
+                 "subfolder": "Screenshots",
+                 "extensions": [".jpg", ".jpeg", ".png", ".gif"]
+             },
+             {
+                 "subfolder": "Documents",
+                 "extensions": [".pdf", ".docx", ".txt"],
+                 "filename_contains": ["report", "summary"]
+             },
+             {
+                 "subfolder": "Logs",
+                 "extensions": [".zip", ".tar", ".gz"],
+                 "filename_contains": ["log"]
+             },
+             {
+                 "subfolder": "Scripts",
+                 "extensions": [".py", ".sh"],
+                 "filename_contains": ["script", "run"]
+             },
+             {
+                 "subfolder": "Playbooks",
+                 "extensions": [".yml"]
+             },
+             {
+                 "subfolder": "HAR",
+                 "extensions": [".har"]
+             }
+         ],
+         "default_subfolder": "other",
+         "file_check_interval": 0.5,
+         "monitor_interval": 0.5,
+         "error_sleep": 5
+     }
+     ```
+
+4. **Run the Python Server:**
 
    ```bash
-   python server.py
+   python tm_sf_server.py
    ```
 
 5. **Install the Tampermonkey Script:**
@@ -121,7 +240,7 @@ Ensure you have the following installed on your system:
      - Select **"Create a new script..."** from the dropdown menu.
 
    - **Copy and Paste the Script:**
-     - Open the `tm_sf_listener.js` file located in the project directory.
+     - Open the `tm_sf_listener.js` file located in the project directory using your text editor.
      - Copy the entire content of `tm_sf_listener.js`.
      - Paste it into the Tampermonkey editor, replacing any existing code.
 
@@ -134,6 +253,8 @@ Ensure you have the following installed on your system:
        - Open the Tampermonkey dashboard.
        - Find the **Salesforce Case Number Notifier** script and click **"Edit"**.
        - Modify the `url` field in the `GM_xmlhttpRequest` section to match your server's port.
+
+   - **Note:** It may take some time for the Tampermonkey script to intercept the URL and launch on the page. If you encounter issues, try refreshing the Salesforce Lightning tab or restarting your browser.
 
 #### Linux
 
@@ -155,12 +276,54 @@ Ensure you have the following installed on your system:
 
 3. **Configure the Application:**
 
-   Open the `config.json` file in a text editor and adjust the settings as needed. Refer to the [Configuration](#configuration) section for details.
+   - Open the `config.json` file in your preferred text editor.
+   - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
 
-4. **Run the Server:**
+     ```json
+     {
+         "no_case_folder": "Other_downloads",
+         "downloads_dir": "/home/YourUsername/Downloads",
+         "server_port": 8000,
+         "rules": [
+             {
+                 "subfolder": "Screenshots",
+                 "extensions": [".jpg", ".jpeg", ".png", ".gif"]
+             },
+             {
+                 "subfolder": "Documents",
+                 "extensions": [".pdf", ".docx", ".txt"],
+                 "filename_contains": ["report", "summary"]
+             },
+             {
+                 "subfolder": "Logs",
+                 "extensions": [".zip", ".tar", ".gz"],
+                 "filename_contains": ["log"]
+             },
+             {
+                 "subfolder": "Scripts",
+                 "extensions": [".py", ".sh"],
+                 "filename_contains": ["script", "run"]
+             },
+             {
+                 "subfolder": "Playbooks",
+                 "extensions": [".yml"]
+             },
+             {
+                 "subfolder": "HAR",
+                 "extensions": [".har"]
+             }
+         ],
+         "default_subfolder": "other",
+         "file_check_interval": 0.5,
+         "monitor_interval": 0.5,
+         "error_sleep": 5
+     }
+     ```
+
+4. **Run the Python Server:**
 
    ```bash
-   python server.py
+   python tm_sf_server.py
    ```
 
 5. **Install the Tampermonkey Script:**
@@ -170,7 +333,7 @@ Ensure you have the following installed on your system:
      - Select **"Create a new script..."** from the dropdown menu.
 
    - **Copy and Paste the Script:**
-     - Open the `tm_sf_listener.js` file located in the project directory.
+     - Open the `tm_sf_listener.js` file located in the project directory using your text editor.
      - Copy the entire content of `tm_sf_listener.js`.
      - Paste it into the Tampermonkey editor, replacing any existing code.
 
@@ -183,6 +346,8 @@ Ensure you have the following installed on your system:
        - Open the Tampermonkey dashboard.
        - Find the **Salesforce Case Number Notifier** script and click **"Edit"**.
        - Modify the `url` field in the `GM_xmlhttpRequest` section to match your server's port.
+
+   - **Note:** It may take some time for the Tampermonkey script to intercept the URL and launch on the page. If you encounter issues, try refreshing the Salesforce Lightning tab or restarting your browser.
 
 ## Configuration
 
@@ -232,7 +397,8 @@ The application uses a `config.json` file to manage settings. Below is an exampl
 ### Configuration Parameters
 
 - **`no_case_folder`**: Name of the folder where files without an active case are moved.
-- **`downloads_dir`**: Absolute path to your Downloads directory.
+- **`downloads_dir`**: **Absolute path to your Downloads directory.**  
+  **Important for Windows:** Ensure you provide the full path (e.g., `C:/Users/YourUsername/Downloads`). This is a mandatory configuration.
 - **`server_port`**: Port number on which the server listens (default is `8000`).
 - **`rules`**: List of rules to categorize files based on extensions and filename content.
   - **`subfolder`**: Destination subfolder name.
