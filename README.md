@@ -66,7 +66,7 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
    - **Function:** Detects when you view or stop viewing a Salesforce case in your browser.
    - **Operation:** Captures the active case number and company name from the Salesforce Lightning interface and sends this information to the Python server via an HTTP POST request on port `8000`.
 
-2. **Python Server (Listening on Port 8000):**
+2. **Local Python Server (Listening on Port 8000):**
    - **Function:** Receives case information from the Tampermonkey script.
    - **Operation:** Monitors the Downloads directory for new files. Based on the received case data and predefined rules, it organizes incoming files into the appropriate folders.
 
