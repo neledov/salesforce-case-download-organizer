@@ -15,7 +15,9 @@
       | \____/ | /        
       |________|/
          \\    \\                             
-        _|_|  _|_| SWEEPING CHAOS SO YOU DON'T HAVE TO
+        _|_|  _|_| 
+        SWEEPING CHAOS 
+          SO YOU DON'T HAVE TO!
 ```
 
 **Author:** Anton Neledov  
