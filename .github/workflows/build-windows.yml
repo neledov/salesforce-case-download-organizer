@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'  # Specify the Python version you use
+          python-version: '3.9'
 
       - name: Install Dependencies
         run: |
@@ -29,13 +29,25 @@ jobs:
           pyinstaller --onefile tm_sf_server.py
 
       - name: Prepare Build Directory
+        shell: pwsh
         run: |
-          mkdir -p builds/win
-          Remove-Item -Path builds/win/* -Recurse -Force -ErrorAction SilentlyContinue
+          # Create builds/win directory if it doesn't exist
+          if (-Not (Test-Path -Path "builds/win")) {
+              New-Item -ItemType Directory -Path "builds/win" | Out-Null
+              Write-Host "Created directory builds/win"
+          } else {
+              Write-Host "Directory builds/win already exists"
+          }
+          
+          # Remove existing executables in builds/win
+          Remove-Item -Path "builds/win/*" -Recurse -Force -ErrorAction SilentlyContinue
+          Write-Host "Cleared existing files in builds/win"
 
       - name: Move Executable
+        shell: pwsh
         run: |
-          Move-Item -Path dist\tm_sf_server.exe -Destination builds/win\
+          Move-Item -Path "dist\tm_sf_server.exe" -Destination "builds/win\" -Force
+          Write-Host "Moved tm_sf_server.exe to builds/win"
 
       - name: Commit Built Executable
         uses: stefanzweifel/git-auto-commit-action@v4
