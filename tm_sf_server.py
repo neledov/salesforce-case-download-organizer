@@ -11,6 +11,7 @@ import signal
 from logging.handlers import RotatingFileHandler
 import datetime
 import os
+import sys
 
 # ----------------------------- Configuration -----------------------------
 
@@ -383,7 +384,7 @@ def move_existing_files_to_no_case_folder():
     except Exception as e:
         logging.error(f"Error during initial file move to '{NO_CASE_FOLDER}' folder: {e}")
 
-def monitor_downloads():
+def monitor_downloads(server: socketserver.TCPServer):
     """
     Monitor the Downloads directory for new files and move them accordingly.
     Each file is assigned to the current company_name and case_number at the time of detection.
@@ -456,129 +457,24 @@ def monitor_downloads():
             logging.error(f"Error in monitor_downloads loop: {e}")
             time.sleep(ERROR_SLEEP)  # Configurable error sleep intervals
 
-# ----------------------------- Cleanup Functions -------------------------
-
-def parse_time_threshold(threshold_str: str) -> Optional[datetime.timedelta]:
-    """
-    Parses a time threshold string (e.g., '1m', '6m', '1y') into a timedelta object.
-    Supports days (d), weeks (w), months (m), and years (y).
-    Note: Months and years are approximated (30 days for a month, 365 days for a year).
-    
-    Args:
-        threshold_str (str): The time threshold string.
-
-    Returns:
-        Optional[datetime.timedelta]: The corresponding timedelta or None if invalid format.
-    """
-    match = re.fullmatch(r'(\d+)([dwmy])', threshold_str.strip().lower())
-    if not match:
-        logging.error(f"Invalid cleanup_age_threshold format: '{threshold_str}'. Expected formats like '1m', '6m', '1y'.")
-        return None
-
-    value, unit = match.groups()
-    value = int(value)
-
-    if unit == 'd':
-        return datetime.timedelta(days=value)
-    elif unit == 'w':
-        return datetime.timedelta(weeks=value)
-    elif unit == 'm':
-        return datetime.timedelta(days=30 * value)  # Approximation
-    elif unit == 'y':
-        return datetime.timedelta(days=365 * value)  # Approximation
-    else:
-        logging.error(f"Unsupported time unit in cleanup_age_threshold: '{unit}'.")
-        return None
-
-def cleanup_old_files():
-    """
-    Removes files in the downloads directory older than the configured threshold.
-    """
-    if not CLEANUP_ENABLED:
-        logging.info("File cleanup is disabled. Skipping cleanup process.")
-        return
-
-    threshold = parse_time_threshold(CLEANUP_AGE_THRESHOLD)
-    if not threshold:
-        logging.error("Failed to parse cleanup_age_threshold. Skipping cleanup process.")
-        return
-
-    cutoff_time = datetime.datetime.now() - threshold
-    logging.info(f"Starting cleanup: Removing files older than {CLEANUP_AGE_THRESHOLD} (before {cutoff_time})")
-
-    try:
-        removed_files = 0
-        for root, dirs, files in os.walk(DOWNLOADS_DIR):
-            for file in files:
-                file_path = Path(root) / file
-                try:
-                    # Skip system folders like no_case_folder and default_subfolder
-                    relative_path = file_path.relative_to(DOWNLOADS_DIR)
-                    if relative_path.parts[0] in [NO_CASE_FOLDER, DEFAULT_SUBFOLDER]:
-                        continue  # Skip system folders
-
-                    # Get file's last modification time
-                    file_mtime = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
-                    if file_mtime < cutoff_time:
-                        # Attempt to remove the file
-                        file_path.unlink()
-                        logging.info(f"Removed old file: {file_path}")
-                        removed_files += 1
-                except Exception as e:
-                    logging.error(f"Error removing file {file_path}: {e}")
-
-        logging.info(f"Cleanup completed. Total files removed: {removed_files}")
-    except Exception as e:
-        logging.error(f"Error during cleanup process: {e}")
-
-def cleanup_scheduler():
-    """
-    Schedules periodic cleanup based on the configured interval.
-    """
-    if not CLEANUP_ENABLED:
-        logging.info("File cleanup is disabled. Cleanup scheduler not started.")
-        return
-
-    interval = parse_time_threshold(CLEANUP_INTERVAL)
-    if not interval:
-        logging.error("Failed to parse cleanup_interval. Cleanup scheduler not started.")
-        return
-
-    logging.info(f"Cleanup scheduler started. Next cleanup in {CLEANUP_INTERVAL}.")
-    while True:
-        time.sleep(interval.total_seconds())
-        cleanup_old_files()
-        logging.info(f"Next cleanup scheduled in {CLEANUP_INTERVAL}.")
-
 # ----------------------------- Server Initialization ----------------------
 
-def run_server():
+def run_server(server: socketserver.TCPServer):
     """
     Start the HTTP server to receive case number and company name notifications.
     """
     try:
-        with socketserver.TCPServer(("127.0.0.1", PORT), Handler) as httpd:
-            logging.info(f"Serving at port {PORT} on localhost only.")
-
-            # Handle graceful shutdown
-            def shutdown_signal_handler(signum, frame):
-                logging.info("Shutdown signal received. Shutting down server.")
-                httpd.shutdown()
-
-            signal.signal(signal.SIGINT, shutdown_signal_handler)
-            signal.signal(signal.SIGTERM, shutdown_signal_handler)
-
-            httpd.serve_forever()
+        logging.info(f"Serving at port {PORT} on localhost only.")
+        server.serve_forever()
     except Exception as e:
-        logging.error(f"Error starting server: {e}")
-
-# ----------------------------- Cleanup Functions (Reiterated) -------------------------
-
-# (Already defined above)
+        logging.error(f"Error running server: {e}")
+    finally:
+        server.server_close()
+        logging.info("Server has been shut down.")
 
 # ----------------------------- Main Execution -----------------------------
 
-if __name__ == '__main__':
+def main():
     try:
         # Load the configuration at startup
         load_config()
@@ -599,13 +495,36 @@ if __name__ == '__main__':
             cleanup_scheduler_thread = threading.Thread(target=cleanup_scheduler, daemon=True)
             cleanup_scheduler_thread.start()
 
-        # Start monitoring downloads in a separate thread
-        monitor_thread = threading.Thread(target=monitor_downloads, daemon=True)
-        monitor_thread.start()
+        # Create the server object
+        with socketserver.TCPServer(("127.0.0.1", PORT), Handler) as httpd:
+            # Start monitoring downloads in a separate thread
+            monitor_thread = threading.Thread(target=monitor_downloads, args=(httpd,), daemon=True)
+            monitor_thread.start()
 
-        # Start the server in the main thread
-        run_server()
+            # Start the server in a separate thread
+            server_thread = threading.Thread(target=run_server, args=(httpd,), daemon=True)
+            server_thread.start()
 
+            # Notify the user that the server is running
+            print("SCDO server is up and running.")
+            print("Press 'q' then Enter to exit.")
+
+            # Listen for 'q' input to shut down the server
+            while True:
+                user_input = input().strip().lower()
+                if user_input == 'q':
+                    logging.info("Shutdown initiated by user input.")
+                    print("Shutting down the SCDO server...")
+                    httpd.shutdown()
+                    break
+    except KeyboardInterrupt:
+        # Handle Ctrl+C gracefully if possible
+        logging.info("KeyboardInterrupt received. Shutting down the server.")
+        print("\nShutting down the SCDO server...")
     except Exception as e:
         logging.critical(f"Critical error: {e}")
         logging.critical("Exiting script due to critical error.")
+        sys.exit(1)
+
+if __name__ == '__main__':
+    main()
