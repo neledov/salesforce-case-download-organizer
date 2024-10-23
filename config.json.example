@@ -36,6 +36,7 @@
     "monitor_interval": 0.5,     
     "error_sleep": 5,
     "cleanup_enabled": false,
-    "cleanup_age_threshold": "1d"
+    "cleanup_age_threshold": "1d",
+    "cleanup_interval": "1d"
   }
   
