@@ -530,6 +530,7 @@ def main():
             # Notify the user that the server is running
             print("SCDO server is up and running.")
             print(ASCII_ART)
+            print("Logs are written to server.log in executable location")
             print("Press 'q' then Enter to exit.")
 
             # Listen for 'q' input to shut down the server
