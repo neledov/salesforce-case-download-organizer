@@ -1,4 +1,4 @@
-name: Build Windows Executable
+name: Build and Release Windows Executable
 
 on:
   push:
@@ -7,17 +7,19 @@ on:
     branches: [ main ]
 
 jobs:
-  build-windows:
+  build-and-release:
     runs-on: windows-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: '3.9'  # Specify the Python version you use
 
       - name: Install Dependencies
         run: |
@@ -28,30 +30,23 @@ jobs:
         run: |
           pyinstaller --onefile tm_sf_server.py
 
-      - name: Prepare Build Directory
-        shell: pwsh
-        run: |
-          # Create builds/win directory if it doesn't exist
-          if (-Not (Test-Path -Path "builds/win")) {
-              New-Item -ItemType Directory -Path "builds/win" | Out-Null
-              Write-Host "Created directory builds/win"
-          } else {
-              Write-Host "Directory builds/win already exists"
-          }
-          
-          # Remove existing executables in builds/win
-          Remove-Item -Path "builds/win/*" -Recurse -Force -ErrorAction SilentlyContinue
-          Write-Host "Cleared existing files in builds/win"
-
-      - name: Move Executable
-        shell: pwsh
-        run: |
-          Move-Item -Path "dist\tm_sf_server.exe" -Destination "builds/win\" -Force
-          Write-Host "Moved tm_sf_server.exe to builds/win"
-
-      - name: Commit Built Executable
-        uses: stefanzweifel/git-auto-commit-action@v4
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          commit_message: 'Add Windows build'
-          branch: main
-          file_pattern: 'builds/win/tm_sf_server.exe'
+          tag_name: v1.0.${{ github.run_number }}
+          release_name: Release v1.0.${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Executable to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: dist/tm_sf_server.exe
+          asset_name: tm_sf_server.exe
+          asset_content_type: application/octet-stream
