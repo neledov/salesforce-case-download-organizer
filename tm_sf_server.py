@@ -264,7 +264,7 @@ def move_existing_files_to_no_case_folder():
         target_folder.mkdir(parents=True, exist_ok=True)
 
         for file in DOWNLOADS_DIR.iterdir():
-            if file.is_file() and not file.name.startswith('.') and not file.name.endswith('.download'):
+            if file.is_file() and not file.name.startswith('.') and not file.name.endswith('.crdownload'):
                 try:
                     destination = target_folder / file.name
                     if destination.exists():
