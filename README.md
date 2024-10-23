@@ -197,20 +197,14 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 
 ## Troubleshooting
 
-- **Server Doesn't Start:**
-  - **Check `server.log`:** Look for error messages to identify issues.
-  - **Verify Port Availability:** Ensure the configured port isn't in use by another application.
-  - **Configuration Errors:** Ensure `config.json` paths and settings are correct.
+**Server Doesn't Start:**  
+Check the `server.log` file for any error messages to identify issues. Ensure that the configured port is not being used by another application and verify that all paths and settings in `config.json` are correct.
 
-- **Files Not Organizing:**
-  - **Ensure Tampermonkey Script is Active:** Verify the script is running and correctly configured.
-  - **Active Case Information:** Make sure you're on an active Salesforce case tab during downloads.
-  - **Review Rules:** Confirm that your file types and naming conventions match the defined rules.
+**Files Not Organizing:**  
+Make sure the Tampermonkey script is active and properly configured. Confirm that you are on an active Salesforce case tab when downloading files. Additionally, review your file organization rules to ensure they match the types and naming conventions of your downloaded files.
 
-- **Cleanup Not Working:**
-  - **Enable Cleanup:** Ensure `"cleanup_enabled": true` in `config.json`.
-  - **Check Thresholds:** Verify `"cleanup_age_threshold"` and `"cleanup_interval"` are set appropriately.
-  - **Log Inspection:** Look into `server.log` for any cleanup-related errors.
+**Cleanup Not Working:**  
+Ensure that `"cleanup_enabled": true` is set in `config.json`. Verify that the `"cleanup_age_threshold"` and `"cleanup_interval"` values are appropriately configured. Check the `server.log` for any errors related to the cleanup process.
 
 ## Contributing
 
