@@ -1,27 +1,37 @@
+Certainly! Below is the **fully updated `README.md`** for your **Salesforce Case Download Organizer (SCDO)** project. The updates include:
+
+1. **File Cleanup Functionality:** Detailed under the **Features** and **Configuration** sections.
+2. **Usage Recommendation:** Advising users to stay on the active case tab until downloads finish.
+3. **Motivation Section:** Moved to the beginning to highlight the reasoning behind choosing Tampermonkey and Python due to corporate browser restrictions.
+
+---
+
 # Salesforce Case Download Organizer
 
-```              +||
-              +  |||| +
-               + ||||
-                 \||/
-                  JJ
-     _________    ||
-    /________/|   || 
-   /________/ |   || 
-  /________/  |   ||
-  |  SCDO  | =====@B  
-  |  0  0  |  |   ||
-  | \____/ | /        
-  |________|/
-     \\    \\
-    __|    __| SWEEPING THROUGH YOUR CHAOS
-```  
+```              
+                  +||
+                  +  |||| +
+                   + ||||
+                     \||/
+                      JJ
+         _________    ||
+        /________/|   || 
+       /________/ |   || 
+      /________/  |   ||
+      |  SCDO  | =====@B  
+      |  0  0  |  |   ||
+      | \____/ | /        
+      |________|/
+         \\    \\                             
+        __|    __| SWEEPING THROUGH YOUR CHAOS
+```
 
 **Author:** Anton Neledov  
 **Repository:** [https://github.com/neledov/salesforce-case-download-organizer](https://github.com/neledov/salesforce-case-download-organizer)
 
 ## Table of Contents
 
+- [Motivation](#motivation)
 - [Overview](#overview)
 - [Features](#features)
 - [How It Works](#how-it-works)
@@ -33,9 +43,19 @@
     - [macOS](#macos)
     - [Linux](#linux)
 - [Configuration](#configuration)
+- [Usage Recommendations](#usage-recommendations)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
+
+## Motivation
+
+This application was developed in response to the **ban of unpacked browser extensions on corporate browsers**. Due to these restrictions, traditional browser extensions could not be deployed to facilitate seamless communication between Salesforce and the local file system. As a solution:
+
+- **Tampermonkey** was chosen as the user agent because it allows the creation and deployment of user scripts within corporate browsers without requiring unpacked extensions.
+- **Python** was selected as the server base for its cross-platform compatibility, robust file handling capabilities, and ease of integration with existing systems.
+
+This combination ensures that users can efficiently organize their Salesforce-related downloads without violating corporate IT policies.
 
 ## Overview
 
@@ -47,6 +67,8 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 - **Automatic File Monitoring:** Watches your Downloads folder and organizes new files as they arrive.
 - **Configurable Rules:** Customize how files are categorized based on their extensions and names.
 - **Case-Based Organization:** Sorts files into folders corresponding to your active Salesforce cases and companies.
+- **File Cleanup:** Automatically removes old files based on configurable age thresholds (e.g., 1 month, 1 year).
+- **Enable/Disable Cleanup:** Control the file cleanup feature through configuration settings.
 - **Cross-Platform Support:** Compatible with Windows, macOS, and Linux.
 
 ## How It Works
@@ -64,6 +86,13 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
                                                                 |  Downloads Folder   |
                                                                 |  (File Organization)|
                                                                 +---------------------+
+                                                                          |
+                                                                          | File Cleanup
+                                                                          v
+                                                                +---------------------+
+                                                                |  Cleanup Scheduler  |
+                                                                |  (Optional Feature) |
+                                                                +---------------------+
 ```
 
 ### Component Descriptions
@@ -75,6 +104,11 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 2. **Local Python Server (Listening on Port 8000):**
    - **Function:** Receives case information from the Tampermonkey script.
    - **Operation:** Monitors the Downloads directory for new files. Based on the received case data and predefined rules, it organizes incoming files into the appropriate folders.
+
+3. **File Cleanup Scheduler (Optional Feature):**
+   - **Function:** Periodically scans the Downloads directory to remove files older than a specified age threshold.
+   - **Operation:** Deletes files that exceed the configured age (e.g., files older than 6 months) to maintain disk space and reduce clutter.
+   - **Configurable:** Can be enabled or disabled via `config.json`.
 
 ## Installation
 
@@ -115,6 +149,7 @@ Ensure you have the following installed on your system:
    - **Edit `config.json`:**
      - Open the `config.json` file in VSCode.
      - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
+     - **Enable File Cleanup (Optional):** Set `cleanup_enabled` to `true` and specify `cleanup_age_threshold` as desired (e.g., `"6m"` for six months).
 
      ```json
      {
@@ -153,7 +188,10 @@ Ensure you have the following installed on your system:
          "default_subfolder": "other",
          "file_check_interval": 0.5,
          "monitor_interval": 0.5,
-         "error_sleep": 5
+         "error_sleep": 5,
+         "cleanup_enabled": true,
+         "cleanup_age_threshold": "6m",
+         "cleanup_interval": "1d"
      }
      ```
 
@@ -217,6 +255,7 @@ Ensure you have the following installed on your system:
    - **Edit `config.json`:**
      - Open the `config.json` file in your preferred text editor.
      - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field.
+     - **Enable File Cleanup (Optional):** Set `cleanup_enabled` to `true` and specify `cleanup_age_threshold` as desired (e.g., `"6m"` for six months).
 
      ```json
      {
@@ -255,7 +294,10 @@ Ensure you have the following installed on your system:
          "default_subfolder": "other",
          "file_check_interval": 0.5,
          "monitor_interval": 0.5,
-         "error_sleep": 5
+         "error_sleep": 5,
+         "cleanup_enabled": true,
+         "cleanup_age_threshold": "6m",
+         "cleanup_interval": "1d"
      }
      ```
 
@@ -315,6 +357,7 @@ Ensure you have the following installed on your system:
    - **Edit `config.json`:**
      - Open the `config.json` file in your preferred text editor.
      - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field.
+     - **Enable File Cleanup (Optional):** Set `cleanup_enabled` to `true` and specify `cleanup_age_threshold` as desired (e.g., `"6m"` for six months).
 
      ```json
      {
@@ -353,7 +396,10 @@ Ensure you have the following installed on your system:
          "default_subfolder": "other",
          "file_check_interval": 0.5,
          "monitor_interval": 0.5,
-         "error_sleep": 5
+         "error_sleep": 5,
+         "cleanup_enabled": true,
+         "cleanup_age_threshold": "6m",
+         "cleanup_interval": "1d"
      }
      ```
 
@@ -401,6 +447,7 @@ The application uses a `config.json` file to manage settings. Since the reposito
 
    - Open the `config.json` file in your preferred text editor.
    - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
+   - **Enable File Cleanup (Optional):** To activate the file cleanup feature, set `cleanup_enabled` to `true` and define appropriate `cleanup_age_threshold` and `cleanup_interval`.
 
    ```json
    {
@@ -439,7 +486,10 @@ The application uses a `config.json` file to manage settings. Since the reposito
        "default_subfolder": "other",
        "file_check_interval": 0.5,
        "monitor_interval": 0.5,
-       "error_sleep": 5
+       "error_sleep": 5,
+       "cleanup_enabled": true,
+       "cleanup_age_threshold": "6m",
+       "cleanup_interval": "1d"
    }
    ```
 
@@ -457,12 +507,22 @@ The application uses a `config.json` file to manage settings. Since the reposito
 - **`file_check_interval`**: Time (in seconds) between file size checks to determine if a download is complete.
 - **`monitor_interval`**: Time (in seconds) between scans of the Downloads directory.
 - **`error_sleep`**: Time (in seconds) to wait before retrying after an error occurs.
+- **`cleanup_enabled`**: *(Boolean)* Enable (`true`) or disable (`false`) the file cleanup feature.
+- **`cleanup_age_threshold`**: *(String)* Specifies the age threshold for deleting files. Format examples: `"1m"` (1 month), `"6m"` (6 months), `"1y"` (1 year).
+- **`cleanup_interval`**: *(String)* Defines how often the cleanup process should run. Format examples: `"1d"` (1 day), `"12h"` (12 hours).  
+  **Note:** If `cleanup_interval` is not set, cleanup runs only once at startup.
 
 ### Tips for Configuration
 
 - **Customize Rules:** Modify the `rules` section to fit your file categorization needs. Add or remove rules as necessary.
 - **Adjust Intervals:** If you experience performance issues, consider increasing `monitor_interval` and `file_check_interval` to reduce resource usage.
 - **Change Port:** Ensure that the `server_port` you choose is not in use by another application.
+- **Enable Cleanup:** To activate automatic file cleanup, set `cleanup_enabled` to `true` and define appropriate `cleanup_age_threshold` and `cleanup_interval`.
+
+## Usage Recommendations
+
+- **Stay on Active Case Tab During Downloads:**  
+  To ensure that files are correctly associated with the active Salesforce case, it's recommended to keep the Salesforce case tab active in your browser until all relevant downloads have completed. This allows the Tampermonkey script to accurately capture and send the active case information to the Python server.
 
 ## Contributing
 
