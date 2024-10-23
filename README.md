@@ -47,7 +47,7 @@ The **Salesforce Case Download Organizer** (SCDO) automatically organizes your d
 
 ```
 +---------------------+          HTTP POST (Port 8000)          +---------------------+
-| Tampermonkey Script | ---------------------------------------> |  Python Server      |
+| Tampermonkey Script | --------------------------------------->| Local Python Server |
 | (Browser Extension) |                                         |  (Listening on      |
 +---------------------+                                         |   Port 8000)        |
                                                                 +---------------------+
