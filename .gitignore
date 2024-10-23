@@ -1,6 +1,5 @@
 __pycache__/
 *.pyc
-builds/win/
 dist/
 *.spec
 server.log
