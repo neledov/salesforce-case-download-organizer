@@ -4,5 +4,4 @@ dist/
 *.spec
 server.log
 config.json
-builds/win
 venv
