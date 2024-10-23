@@ -35,7 +35,7 @@
     "file_check_interval": 0.5,  
     "monitor_interval": 0.5,     
     "error_sleep": 5,
-    "cleanup_enabled": true,
+    "cleanup_enabled": false,
     "cleanup_age_threshold": "1d"
   }
   
