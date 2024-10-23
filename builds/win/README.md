@@ -53,9 +53,6 @@ Create a `config.json` file in the same directory as the `tm_sf_server.exe` exec
 1. **Configure:**
    - Edit the `config.json` file to set your preferences.
      - **`downloads_dir`**: Set this to the path of your Downloads folder.
-     - **`server_port`**: Choose a port number for the server (default is 8000).
-     - **`rules`**: Define how different file types should be organized.
-     - **Cleanup Settings**: Enable and configure file cleanup if desired.
 
 2. **Run the Server Executable:**
    - Ensure both `tm_sf_server.exe` and `config.json` are in the same directory.
