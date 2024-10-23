@@ -13,6 +13,28 @@ import datetime
 import os
 import sys
 
+# ----------------------------- ASCII Art -----------------------------
+
+ASCII_ART = r"""
+                      +  \\||/
+                    +  . |||| +
+                       + \|||| .
+                         \||/
+                          JJ
+             _________    ||
+            /________/|   || 
+           /________/ |   || 
+          /________/  |   ||
+        //|  SCDO  | =====@B  
+       // |  0  0  |  |   ||
+        \\| \____/ | /        
+         @|________|/
+             \\    \\                             
+            _|_|  _|_| 
+            SWEEPING CHAOS 
+              SO YOU DON'T HAVE TO!
+"""
+
 # ----------------------------- Configuration -----------------------------
 
 CONFIG_FILE = 'config.json'  # Path to the configuration file
@@ -507,6 +529,7 @@ def main():
 
             # Notify the user that the server is running
             print("SCDO server is up and running.")
+            print(ASCII_ART)
             print("Press 'q' then Enter to exit.")
 
             # Listen for 'q' input to shut down the server
