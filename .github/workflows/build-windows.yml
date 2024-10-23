@@ -1,0 +1,45 @@
+name: Build Windows Executable
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'  # Specify the Python version you use
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build Executable
+        run: |
+          pyinstaller --onefile tm_sf_server.py
+
+      - name: Prepare Build Directory
+        run: |
+          mkdir -p builds/win
+          Remove-Item -Path builds/win/* -Recurse -Force -ErrorAction SilentlyContinue
+
+      - name: Move Executable
+        run: |
+          Move-Item -Path dist\tm_sf_server.exe -Destination builds/win\
+
+      - name: Commit Built Executable
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: 'Add Windows build'
+          branch: main
+          file_pattern: 'builds/win/tm_sf_server.exe'
