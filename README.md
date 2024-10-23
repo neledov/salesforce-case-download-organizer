@@ -1,11 +1,3 @@
-Certainly! Below is the **fully updated `README.md`** for your **Salesforce Case Download Organizer (SCDO)** project. The updates include:
-
-1. **File Cleanup Functionality:** Detailed under the **Features** and **Configuration** sections.
-2. **Usage Recommendation:** Advising users to stay on the active case tab until downloads finish.
-3. **Motivation Section:** Moved to the beginning to highlight the reasoning behind choosing Tampermonkey and Python due to corporate browser restrictions.
-
----
-
 # Salesforce Case Download Organizer
 
 ```              
