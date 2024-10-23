@@ -1,4 +1,5 @@
 # Salesforce Case Download Organizer
+
 ```
      _________
     /        /|
@@ -8,15 +9,31 @@
   |  0  0  |  |
   | \____/ | /
   |________|/
-
 ```
 
 **Author:** Anton Neledov  
 **Repository:** [https://github.com/neledov/salesforce-case-download-organizer](https://github.com/neledov/salesforce-case-download-organizer)
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [How It Works](#how-it-works)
+- [Component Descriptions](#component-descriptions)
+- [Installation](#installation)
+  - [Prerequisites](#prerequisites)
+  - [Installation Steps by Operating System](#installation-steps-by-operating-system)
+    - [Windows](#windows)
+    - [macOS](#macos)
+    - [Linux](#linux)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [License](#license)
+- [Contact](#contact)
+
 ## Overview
 
-The **Salesforce Case Download Organizer** automatically organizes your downloaded files based on active Salesforce cases and associated companies, keeping your Downloads folder tidy and efficient.
+The **Salesforce Case Download Organizer** (SCDO) automatically organizes your downloaded files based on active Salesforce cases and associated companies, keeping your Downloads folder tidy and efficient.
 
 ## Features
 
@@ -30,7 +47,7 @@ The **Salesforce Case Download Organizer** automatically organizes your download
 
 ```
 +---------------------+          HTTP POST (Port 8000)          +---------------------+
-| Tampermonkey Script | --------------------------------------->|  Python Server      |
+| Tampermonkey Script | ---------------------------------------> |  Python Server      |
 | (Browser Extension) |                                         |  (Listening on      |
 +---------------------+                                         |   Port 8000)        |
                                                                 +---------------------+
@@ -53,10 +70,6 @@ The **Salesforce Case Download Organizer** automatically organizes your download
    - **Function:** Receives case information from the Tampermonkey script.
    - **Operation:** Monitors the Downloads directory for new files. Based on the received case data and predefined rules, it organizes incoming files into the appropriate folders.
 
-3. **Downloads Folder (File Organization):**
-   - **Function:** Serves as the target directory for organizing downloaded files.
-   - **Operation:** The Python server moves and sorts files into subfolders (e.g., `Screenshots`, `Documents`) within folders named after the associated company and case number.
-
 ## Installation
 
 ### Prerequisites
@@ -66,7 +79,7 @@ Ensure you have the following installed on your system:
 - **Python 3.6 or higher:** Download from the [official Python website](https://www.python.org/downloads/).
 - **Git:** To clone the repository, download it from [here](https://git-scm.com/downloads), or you can download the ZIP file directly from GitHub.
 - **Tampermonkey Extension:** Install Tampermonkey in your preferred browser:
-  - [Chrome](https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
+  - [Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo)
   - [Firefox](https://addons.mozilla.org/firefox/addon/tampermonkey/)
   - [Edge](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/)
   - [Safari](https://www.tampermonkey.net/?browser=safari)
@@ -89,8 +102,13 @@ Ensure you have the following installed on your system:
 
 2. **Configure the Application:**
 
-   - Open the `config.json` file in VSCode.
-   - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
+   - **Rename Configuration File:**
+     - In the cloned repository, locate the `config.json.example` file.
+     - Rename it to `config.json`.
+
+   - **Edit `config.json`:**
+     - Open the `config.json` file in VSCode.
+     - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
 
      ```json
      {
@@ -186,8 +204,13 @@ Ensure you have the following installed on your system:
 
 3. **Configure the Application:**
 
-   - Open the `config.json` file in your preferred text editor.
-   - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
+   - **Rename Configuration File:**
+     - Locate the `config.json.example` file in the repository.
+     - Rename it to `config.json`.
+
+   - **Edit `config.json`:**
+     - Open the `config.json` file in your preferred text editor.
+     - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field.
 
      ```json
      {
@@ -279,8 +302,13 @@ Ensure you have the following installed on your system:
 
 3. **Configure the Application:**
 
-   - Open the `config.json` file in your preferred text editor.
-   - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
+   - **Rename Configuration File:**
+     - Locate the `config.json.example` file in the repository.
+     - Rename it to `config.json`.
+
+   - **Edit `config.json`:**
+     - Open the `config.json` file in your preferred text editor.
+     - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field.
 
      ```json
      {
@@ -354,48 +382,60 @@ Ensure you have the following installed on your system:
 
 ## Configuration
 
-The application uses a `config.json` file to manage settings. Below is an example configuration:
+The application uses a `config.json` file to manage settings. Since the repository includes `config.json.example`, you need to rename and configure it accordingly.
 
-```json
-{
-    "no_case_folder": "Other_downloads",
-    "downloads_dir": "/path/to/your/Downloads",
-    "server_port": 8000,
-    "rules": [
-        {
-            "subfolder": "Screenshots",
-            "extensions": [".jpg", ".jpeg", ".png", ".gif"]
-        },
-        {
-            "subfolder": "Documents",
-            "extensions": [".pdf", ".docx", ".txt"],
-            "filename_contains": ["report", "summary"]
-        },
-        {
-            "subfolder": "Logs",
-            "extensions": [".zip", ".tar", ".gz"],
-            "filename_contains": ["log"]
-        },
-        {
-            "subfolder": "Scripts",
-            "extensions": [".py", ".sh"],
-            "filename_contains": ["script", "run"]
-        },
-        {
-            "subfolder": "Playbooks",
-            "extensions": [".yml"]
-        },
-        {
-            "subfolder": "HAR",
-            "extensions": [".har"]
-        }
-    ],
-    "default_subfolder": "other",
-    "file_check_interval": 0.5,
-    "monitor_interval": 0.5,
-    "error_sleep": 5
-}
-```
+### Configuration Steps
+
+1. **Rename Configuration File:**
+
+   - Locate the `config.json.example` file in the cloned repository.
+   - Rename it to `config.json`.
+
+2. **Edit `config.json`:**
+
+   - Open the `config.json` file in your preferred text editor.
+   - **Important:** Provide the absolute path to your Downloads directory in the `downloads_dir` field. This configuration is mandatory for the organizer to function correctly.
+
+   ```json
+   {
+       "no_case_folder": "Other_downloads",
+       "downloads_dir": "/path/to/your/Downloads",
+       "server_port": 8000,
+       "rules": [
+           {
+               "subfolder": "Screenshots",
+               "extensions": [".jpg", ".jpeg", ".png", ".gif"]
+           },
+           {
+               "subfolder": "Documents",
+               "extensions": [".pdf", ".docx", ".txt"],
+               "filename_contains": ["report", "summary"]
+           },
+           {
+               "subfolder": "Logs",
+               "extensions": [".zip", ".tar", ".gz"],
+               "filename_contains": ["log"]
+           },
+           {
+               "subfolder": "Scripts",
+               "extensions": [".py", ".sh"],
+               "filename_contains": ["script", "run"]
+           },
+           {
+               "subfolder": "Playbooks",
+               "extensions": [".yml"]
+           },
+           {
+               "subfolder": "HAR",
+               "extensions": [".har"]
+           }
+       ],
+       "default_subfolder": "other",
+       "file_check_interval": 0.5,
+       "monitor_interval": 0.5,
+       "error_sleep": 5
+   }
+   ```
 
 ### Configuration Parameters
 
