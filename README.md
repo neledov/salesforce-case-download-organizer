@@ -563,6 +563,7 @@ This project is licensed under the [MIT License](https://opensource.org/licenses
 ## Contact
 
 For any questions or support, please reach out through the [GitHub Issues](https://github.com/neledov/salesforce-case-download-organizer/issues) page of the repository.
+
 If you are my fellow colleagues - please reach out to me via Slack.
 
 ---
