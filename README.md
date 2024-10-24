@@ -559,11 +559,6 @@ Contributions are welcome! If you'd like to contribute to the Salesforce Case Do
 ## License
 
 This project is licensed under the [MIT License](https://opensource.org/licenses/MIT). Feel free to use and modify it as needed.
-
-## Contact
-
-For any questions or support, please reach out through the [GitHub Issues](https://github.com/neledov/salesforce-case-download-organizer/issues) page of the repository.
-If you are my fellow colleagues - please reach out to me via Slack.
 ---
 
 *Thank you for using the Salesforce Case Download Organizer! Your feedback and contributions are highly appreciated.*
