@@ -113,3 +113,13 @@ jobs:
           asset_path: tm_sf_server
           asset_name: tm_sf_server-mac
           asset_content_type: application/octet-stream
+
+      - name: Upload config.json.example
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./config.json.example 
+          asset_name: config.json.example
+          asset_content_type: application/json
