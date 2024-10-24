@@ -115,6 +115,7 @@ Ensure you have the following installed on your system:
   - [Firefox](https://addons.mozilla.org/firefox/addon/tampermonkey/)
   - [Edge](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/)
   - [Safari](https://www.tampermonkey.net/?browser=safari)
+- **Pre-built releases:** You can download pre-built binaries for MacOS and Windows from [releases page](https://github.com/neledov/salesforce-case-download-organizer/releases), keep in mind that Windows version is suspicous for Anti-Malware protection since this is insecure HTTP server.
 
 ### Installation Steps by Operating System
 
